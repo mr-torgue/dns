@@ -16,6 +16,7 @@ import (
 // what kind of DNSKEY will be generated.
 // The ECDSA algorithms imply a fixed keysize, in that case
 // bits should be set to the size of the algorithm.
+// TODO(mr-torgue): add support for PQC
 func (k *DNSKEY) Generate(bits int) (crypto.PrivateKey, error) {
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA1NSEC3SHA1:
@@ -44,6 +45,7 @@ func (k *DNSKEY) Generate(bits int) (crypto.PrivateKey, error) {
 
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA512, RSASHA1NSEC3SHA1:
+		// TODO(mr-torgue): replace with EVP_PKEY_keygen (https://docs.openssl.org/3.0/man3/EVP_PKEY_keygen/#synopsis)
 		priv, err := rsa.GenerateKey(rand.Reader, bits)
 		if err != nil {
 			return nil, err
