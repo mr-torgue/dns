@@ -1,5 +1,6 @@
 package dns
 
+// TODO(mr-torgue): add support for PQC. Might need to create new functions for new algorithms.
 import (
 	"bufio"
 	"crypto"
