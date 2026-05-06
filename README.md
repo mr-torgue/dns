@@ -9,8 +9,11 @@ Dependencies:
 - OpenSSL 3.6.2
 - liboqs 0.15.0 (optional)
 - oqs-provider 0.11.0 (optional)
+  
 Dependencies can be installed with the provided script.
-Note: OpenSSL does NOT work with liboqs and oqs-provider. Also, liboqs and oqs-provider are required if you want to use experimental PQC algorithms.
+Note: 
+- OpenSSL 4.0.0 does NOT work with liboqs and oqs-provider (at least not these versions).
+- liboqs and oqs-provider are required if you want to use experimental PQC algorithms.
 
 To do:
 - [ ] Add support for PQC signatures
