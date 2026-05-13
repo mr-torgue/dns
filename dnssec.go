@@ -5,8 +5,6 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/rsa"
 	_ "crypto/sha1"   // need its init function
 	_ "crypto/sha256" // need its init function
@@ -18,6 +16,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pexip/go-openssl"
 )
 
 // DNSSEC encryption algorithm codes.
@@ -42,6 +42,9 @@ const (
 	INDIRECT   uint8 = 252
 	PRIVATEDNS uint8 = 253 // Private (experimental keys)
 	PRIVATEOID uint8 = 254
+
+	// OQS
+	FALCON512
 )
 
 // AlgorithmToString is a map of algorithm IDs to algorithm names.
@@ -68,16 +71,16 @@ var AlgorithmToString = map[uint8]string{
 // For newer algorithm that do their own hashing (i.e. ED25519) the returned value
 // is 0, implying no (external) hashing should occur. The non-exported identityHash is then
 // used.
-var AlgorithmToHash = map[uint8]crypto.Hash{
-	RSAMD5:           crypto.MD5, // Deprecated in RFC 6725
-	DSA:              crypto.SHA1,
-	RSASHA1:          crypto.SHA1,
-	RSASHA1NSEC3SHA1: crypto.SHA1,
-	RSASHA256:        crypto.SHA256,
-	ECDSAP256SHA256:  crypto.SHA256,
-	ECDSAP384SHA384:  crypto.SHA384,
-	RSASHA512:        crypto.SHA512,
-	ED25519:          0,
+var AlgorithmToHash = map[uint8]string{
+	RSAMD5:           "md5", // Deprecated in RFC 6725
+	DSA:              "sha1",
+	RSASHA1:          "sha1",
+	RSASHA1NSEC3SHA1: "sha1",
+	RSASHA256:        "sha256",
+	ECDSAP256SHA256:  "sha256",
+	ECDSAP384SHA384:  "sha384",
+	RSASHA512:        "sha512",
+	ED25519:          "",
 }
 
 // DNSSEC hashing algorithm codes.
@@ -249,7 +252,7 @@ func (d *DS) ToCDS() *CDS {
 // There is no check if RRSet is a proper (RFC 2181) RRSet.  If OrigTTL is non
 // zero, it is used as-is, otherwise the TTL of the RRset is used as the
 // OrigTTL.
-func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
+func (rr *RRSIG) Sign(k openssl.PrivateKey, rrset []RR) error {
 	h0 := rrset[0].Header()
 	rr.Hdr.Rrtype = TypeRRSIG
 	rr.Hdr.Name = h0.Name
@@ -267,7 +270,7 @@ func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
 	return rr.signAsIs(k, rrset)
 }
 
-func (rr *RRSIG) signAsIs(k crypto.Signer, rrset []RR) error {
+func (rr *RRSIG) signAsIs(k openssl.PrivateKey, rrset []RR) error {
 	if k == nil {
 		return ErrPrivKey
 	}
@@ -299,20 +302,16 @@ func (rr *RRSIG) signAsIs(k crypto.Signer, rrset []RR) error {
 		return err
 	}
 
-	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
-	if err != nil {
-		return err
-	}
+	//h, err := hashFromAlgorithm(rr.Algorithm)
+	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
 
 	switch rr.Algorithm {
 	case RSAMD5, DSA, DSANSEC3SHA1:
 		// See RFC 6944.
 		return ErrAlg
 	default:
-		h.Write(signdata)
-		h.Write(wire)
-
-		signature, err := sign(k, h.Sum(nil), cryptohash, rr.Algorithm)
+		signdata = append(signdata, wire...)
+		signature, err := sign(k, h, signdata, rr.Algorithm)
 		if err != nil {
 			return err
 		}
@@ -322,8 +321,10 @@ func (rr *RRSIG) signAsIs(k crypto.Signer, rrset []RR) error {
 	}
 }
 
-func sign(k crypto.Signer, hashed []byte, hash crypto.Hash, alg uint8) ([]byte, error) {
-	signature, err := k.Sign(rand.Reader, hashed, hash)
+func sign(k openssl.PrivateKey, h *openssl.Digest, data []byte, alg uint8) ([]byte, error) {
+	signature, err := k.SignPKCS1v15(h, data)
+	//var k2 crypto.Signer
+	//k2.Sign(rand.Reader, hashed, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -450,6 +451,7 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 
 		h.Write(signeddata)
 		h.Write(wire)
+
 		return rsa.VerifyPKCS1v15(pubkey, cryptohash, h.Sum(nil), sigbuf)
 
 	case ECDSAP256SHA256, ECDSAP384SHA384:
@@ -513,7 +515,7 @@ func (rr *RRSIG) sigBuf() []byte {
 }
 
 // publicKeyRSA returns the RSA public key from a DNSKEY record.
-func (k *DNSKEY) publicKeyRSA() *rsa.PublicKey {
+func (k *DNSKEY) publicKeyRSA() openssl.PublicKey {
 	keybuf, err := fromBase64([]byte(k.PublicKey))
 	if err != nil {
 		return nil
@@ -547,7 +549,7 @@ func (k *DNSKEY) publicKeyRSA() *rsa.PublicKey {
 		return nil
 	}
 
-	pubkey := new(rsa.PublicKey)
+	//pubkey := new(rsa.PublicKey)
 
 	var expo uint64
 	// The exponent of length explen is between keyoff and modoff.
@@ -560,37 +562,45 @@ func (k *DNSKEY) publicKeyRSA() *rsa.PublicKey {
 		return nil
 	}
 
-	pubkey.E = int(expo)
-	pubkey.N = new(big.Int).SetBytes(keybuf[modoff:])
+	//pubkey.E = int(expo)
+	//pubkey.N = new(big.Int).SetBytes(keybuf[modoff:])
+	pubkey, err := openssl.BuildRSAKey(new(big.Int).SetUint64(expo), new(big.Int).SetBytes(keybuf[modoff:]))
+	if err != nil {
+		return nil
+	}
 	return pubkey
 }
 
 // publicKeyECDSA returns the Curve public key from the DNSKEY record.
-func (k *DNSKEY) publicKeyECDSA() *ecdsa.PublicKey {
+func (k *DNSKEY) publicKeyECDSA() openssl.PublicKey {
 	keybuf, err := fromBase64([]byte(k.PublicKey))
 	if err != nil {
 		return nil
 	}
-	pubkey := new(ecdsa.PublicKey)
+	var pubkey openssl.PublicKey
 	switch k.Algorithm {
 	case ECDSAP256SHA256:
-		pubkey.Curve = elliptic.P256()
 		if len(keybuf) != 64 {
 			// wrongly encoded key
 			return nil
 		}
+		pubkey, err = openssl.BuildECDSAKey(keybuf, "prime256v1")
 	case ECDSAP384SHA384:
-		pubkey.Curve = elliptic.P384()
 		if len(keybuf) != 96 {
 			// Wrongly encoded key
 			return nil
 		}
+		pubkey, err = openssl.BuildECDSAKey(keybuf, "secp384r1")
+	default:
+		return nil
 	}
-	pubkey.X = new(big.Int).SetBytes(keybuf[:len(keybuf)/2])
-	pubkey.Y = new(big.Int).SetBytes(keybuf[len(keybuf)/2:])
+	if err != nil {
+		return nil
+	}
 	return pubkey
 }
 
+/*
 func (k *DNSKEY) publicKeyED25519() ed25519.PublicKey {
 	keybuf, err := fromBase64([]byte(k.PublicKey))
 	if err != nil {
@@ -600,6 +610,29 @@ func (k *DNSKEY) publicKeyED25519() ed25519.PublicKey {
 		return nil
 	}
 	return keybuf
+}
+*/
+
+// publicKeyGeneric uses the raw key
+func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
+	keybuf, err := fromBase64([]byte(k.PublicKey))
+	if err != nil {
+		return nil
+	}
+	var pubkey openssl.PublicKey
+	switch k.Algorithm {
+	case ED25519:
+		if len(keybuf) != ed25519.PublicKeySize {
+			return nil
+		}
+		pubkey, err = openssl.BuildRawKey(keybuf)
+	default:
+		return nil
+	}
+	if err != nil {
+		return nil
+	}
+	return pubkey
 }
 
 type wireSlice [][]byte

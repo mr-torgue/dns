@@ -1,19 +1,20 @@
 package dns
 
 import (
-	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/rsa"
 	"encoding/binary"
 	"math/big"
 	"time"
+
+	"github.com/pexip/go-openssl"
 )
 
 // Sign signs a dns.Msg. It fills the signature with the appropriate data.
 // The SIG record should have the SignerName, KeyTag, Algorithm, Inception
 // and Expiration set.
-func (rr *SIG) Sign(k crypto.Signer, m *Msg) ([]byte, error) {
+func (rr *SIG) Sign(k openssl.PrivateKey, m *Msg) ([]byte, error) {
 	if k == nil {
 		return nil, ErrPrivKey
 	}
@@ -38,17 +39,12 @@ func (rr *SIG) Sign(k crypto.Signer, m *Msg) ([]byte, error) {
 	}
 	buf = buf[:off:cap(buf)]
 
-	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
-	if err != nil {
-		return nil, err
-	}
+	//h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
 
-	// Write SIG rdata
-	h.Write(buf[len(mbuf)+1+2+2+4+2:])
-	// Write message
-	h.Write(buf[:len(mbuf)])
+	signdata := append(buf[:len(mbuf)], buf[len(mbuf)+1+2+2+4+2:]...)
 
-	signature, err := sign(k, h.Sum(nil), cryptohash, rr.Algorithm)
+	signature, err := sign(k, h, signdata, rr.Algorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -81,10 +77,7 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 		return ErrKey
 	}
 
-	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
-	if err != nil {
-		return err
-	}
+	h, err := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
 
 	buflen := len(buf)
 	qdc := binary.BigEndian.Uint16(buf[4:])

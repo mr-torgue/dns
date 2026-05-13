@@ -147,7 +147,7 @@ func TestSignVerify(t *testing.T) {
 	sig.Algorithm = RSASHA256
 
 	for _, r := range []RR{soa, soa1, srv, hinfo} {
-		if err := sig.Sign(privkey.(*rsa.PrivateKey), []RR{r}); err != nil {
+		if err := sig.Sign(privkey, []RR{r}); err != nil {
 			t.Error("failure to sign the record:", err)
 			continue
 		}

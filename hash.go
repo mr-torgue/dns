@@ -2,8 +2,6 @@ package dns
 
 import (
 	"bytes"
-	"crypto"
-	"hash"
 )
 
 // identityHash will not hash, it only buffers the data written into it and returns it as-is.
@@ -19,13 +17,15 @@ func (i identityHash) BlockSize() int              { return 1024 }
 func (i identityHash) Reset()                      { i.b.Reset() }
 func (i identityHash) Sum(b []byte) []byte         { return append(b, i.b.Bytes()...) }
 
-func hashFromAlgorithm(alg uint8) (hash.Hash, crypto.Hash, error) {
+/*
+func hashFromAlgorithm(alg uint8) (*openssl.Digest, error) {
 	hashnumber, ok := AlgorithmToHash[alg]
 	if !ok {
-		return nil, 0, ErrAlg
+		return nil, ErrAlg
 	}
 	if hashnumber == 0 {
 		return identityHash{b: &bytes.Buffer{}}, hashnumber, nil
 	}
 	return hashnumber.New(), hashnumber, nil
 }
+*/
