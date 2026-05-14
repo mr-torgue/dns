@@ -608,19 +608,6 @@ func (k *DNSKEY) publicKeyECDSA() openssl.PublicKey {
 	return pubkey
 }
 
-/*
-func (k *DNSKEY) publicKeyED25519() ed25519.PublicKey {
-	keybuf, err := fromBase64([]byte(k.PublicKey))
-	if err != nil {
-		return nil
-	}
-	if len(keybuf) != ed25519.PublicKeySize {
-		return nil
-	}
-	return keybuf
-}
-*/
-
 // publicKeyGeneric uses the raw key
 func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
 	keybuf, err := fromBase64([]byte(k.PublicKey))

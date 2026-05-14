@@ -14,14 +14,14 @@
 
 package openssl
 
-type SHA1Hash = digestJob
+type SHA1Hash = DigestJob
 
 func NewSHA1Hash() (*SHA1Hash, error) {
 	digest, err := GetDigestByName("sha1", false)
 	if err != nil {
 		return nil, err
 	}
-	return newDigestJob(*digest)
+	return NewDigestJob(*digest)
 }
 
 func SHA1(data []byte) (result [20]byte, err error) {

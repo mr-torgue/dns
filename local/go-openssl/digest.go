@@ -42,21 +42,21 @@ func (d *Digest) GetSize() int {
 	return int(C.EVP_MD_get_size(d.ptr))
 }
 
-// digestJob represents a digest job
-type digestJob struct {
+// DigestJob represents a digest job
+type DigestJob struct {
 	digest   Digest
 	ctx      *C.EVP_MD_CTX
 	finished bool
 }
 
-// newDigestJob creates a new digest job for the given digest
-func newDigestJob(digest Digest) (*digestJob, error) {
+// NewDigestJob creates a new digest job for the given digest
+func NewDigestJob(digest Digest) (*DigestJob, error) {
 	ctx := C.EVP_MD_CTX_new()
 	if ctx == nil {
 		return nil, errorFromErrorQueue()
 	}
-	job := &digestJob{digest: digest, ctx: ctx, finished: false}
-	runtime.SetFinalizer(job, func(j *digestJob) {
+	job := &DigestJob{digest: digest, ctx: ctx, finished: false}
+	runtime.SetFinalizer(job, func(j *DigestJob) {
 		j.Close()
 	})
 	if err := job.Reset(); err != nil {
@@ -66,7 +66,7 @@ func newDigestJob(digest Digest) (*digestJob, error) {
 }
 
 // Reset initialises (and therefore resets) the digest
-func (d *digestJob) Reset() error {
+func (d *DigestJob) Reset() error {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 	if int(C.EVP_DigestInit_ex(d.ctx, d.digest.ptr, nil)) != 1 {
@@ -76,7 +76,7 @@ func (d *digestJob) Reset() error {
 	return nil
 }
 
-func (d *digestJob) Close() {
+func (d *DigestJob) Close() {
 	if d.ctx != nil {
 		C.EVP_MD_CTX_free(d.ctx)
 		d.ctx = nil
@@ -84,7 +84,7 @@ func (d *digestJob) Close() {
 }
 
 // Update updates a digest job
-func (d *digestJob) Update(data []byte) error {
+func (d *DigestJob) Update(data []byte) error {
 	if d.finished {
 		return ErrDigestFinalised
 	}
@@ -100,7 +100,7 @@ func (d *digestJob) Update(data []byte) error {
 }
 
 // Write writes data to be digested and returns number of bytes written
-func (d *digestJob) Write(p []byte) (int, error) {
+func (d *DigestJob) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
@@ -111,7 +111,7 @@ func (d *digestJob) Write(p []byte) (int, error) {
 }
 
 // Final finalises the digest job and returns the digest sum
-func (d *digestJob) Final() ([]byte, error) {
+func (d *DigestJob) Final() ([]byte, error) {
 	d.finished = true
 	var finalWritten C.uint
 	result := make([]byte, d.digest.GetSize())
@@ -124,12 +124,12 @@ func (d *digestJob) Final() ([]byte, error) {
 }
 
 // Sum finalises the digest job and returns the digest sum
-func (d *digestJob) Sum() ([]byte, error) {
+func (d *DigestJob) Sum() ([]byte, error) {
 	return d.Final()
 }
 
 // SignFinal finalises the digest job, signs it with the given pkey and returns the signature
-func (d *digestJob) SignFinal(key *pKey) ([]byte, error) {
+func (d *DigestJob) SignFinal(key *pKey) ([]byte, error) {
 	d.finished = true
 	var finalWritten C.uint
 	result := make([]byte, C.EVP_PKEY_get_size(key.key))
@@ -142,7 +142,7 @@ func (d *digestJob) SignFinal(key *pKey) ([]byte, error) {
 }
 
 // VerifyFinal finalises the digest job, verifies it with the provided signature/pkey
-func (d *digestJob) VerifyFinal(signature []byte, key *pKey) error {
+func (d *DigestJob) VerifyFinal(signature []byte, key *pKey) error {
 	d.finished = true
 	if C.EVP_VerifyFinal(
 		d.ctx, (*C.uchar)(unsafe.Pointer(&signature[0])), C.uint(len(signature)), key.key,

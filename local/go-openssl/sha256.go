@@ -14,14 +14,14 @@
 
 package openssl
 
-type SHA256Hash = digestJob
+type SHA256Hash = DigestJob
 
 func NewSHA256Hash() (*SHA256Hash, error) {
 	digest, err := GetDigestByName("sha256", false)
 	if err != nil {
 		return nil, err
 	}
-	return newDigestJob(*digest)
+	return NewDigestJob(*digest)
 }
 
 func SHA256(data []byte) (result [32]byte, err error) {

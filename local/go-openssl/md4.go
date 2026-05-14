@@ -14,14 +14,14 @@
 
 package openssl
 
-type MD4Hash = digestJob
+type MD4Hash = DigestJob
 
 func NewMD4Hash(allowNonFIPS bool) (*MD4Hash, error) {
 	digest, err := GetDigestByName("md4", allowNonFIPS)
 	if err != nil {
 		return nil, err
 	}
-	return newDigestJob(*digest)
+	return NewDigestJob(*digest)
 }
 
 func MD4(data []byte, allowNonFIPS bool) (result [16]byte, err error) {

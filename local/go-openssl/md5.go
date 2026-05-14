@@ -14,14 +14,14 @@
 
 package openssl
 
-type MD5Hash = digestJob
+type MD5Hash = DigestJob
 
 func NewMD5Hash() (*MD5Hash, error) {
 	digest, err := GetDigestByName("md5", false)
 	if err != nil {
 		return nil, err
 	}
-	return newDigestJob(*digest)
+	return NewDigestJob(*digest)
 }
 
 func MD5(data []byte) (result [16]byte, err error) {
