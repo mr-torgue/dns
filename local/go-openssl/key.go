@@ -176,6 +176,9 @@ func (key *pKey) SignPKCS1v15(digest *Digest, data []byte) ([]byte, error) {
 
 		return sig[:siglen], nil
 	} else {
+		if digest == nil {
+			return nil, errors.New("signpkcs1v15: digest must not be null")
+		}
 		job, err := newDigestJob(*digest)
 		if err != nil {
 			return nil, err
