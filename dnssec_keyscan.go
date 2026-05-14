@@ -3,19 +3,17 @@ package dns
 // TODO(mr-torgue): add support for PQC. Might need to create new functions for new algorithms.
 import (
 	"bufio"
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
 	"io"
 	"math/big"
 	"strconv"
 	"strings"
+
+	"github.com/pexip/go-openssl"
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.
 // s should be in the same form of the BIND private key files.
-func (k *DNSKEY) NewPrivateKey(s string) (crypto.PrivateKey, error) {
+func (k *DNSKEY) NewPrivateKey(s string) (openssl.PrivateKey, error) {
 	if s == "" || s[len(s)-1] != '\n' { // We need a closing newline
 		return k.ReadPrivateKey(strings.NewReader(s+"\n"), "")
 	}
@@ -26,7 +24,7 @@ func (k *DNSKEY) NewPrivateKey(s string) (crypto.PrivateKey, error) {
 // only used in error reporting.
 // The public key must be known, because some cryptographic algorithms embed
 // the public inside the privatekey.
-func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, error) {
+func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (openssl.PrivateKey, error) {
 	m, err := parseKey(q, file)
 	if m == nil {
 		return nil, err
@@ -53,7 +51,6 @@ func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, er
 		if pub == nil {
 			return nil, ErrKey
 		}
-		priv.PublicKey = *pub
 		return priv, nil
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		priv, err := readPrivateKeyECDSA(m)
@@ -64,7 +61,6 @@ func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, er
 		if pub == nil {
 			return nil, ErrKey
 		}
-		priv.PublicKey = *pub
 		return priv, nil
 	case ED25519:
 		return readPrivateKeyED25519(m)
@@ -74,9 +70,8 @@ func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, er
 }
 
 // Read a private key (file) string and create a public key. Return the private key.
-func readPrivateKeyRSA(m map[string]string) (*rsa.PrivateKey, error) {
-	p := new(rsa.PrivateKey)
-	p.Primes = []*big.Int{nil, nil}
+func readPrivateKeyRSA(m map[string]string) (openssl.PrivateKey, error) {
+	var E, N, D, P, Q *big.Int
 	for k, v := range m {
 		switch k {
 		case "modulus", "publicexponent", "privateexponent", "prime1", "prime2":
@@ -85,17 +80,16 @@ func readPrivateKeyRSA(m map[string]string) (*rsa.PrivateKey, error) {
 				return nil, err
 			}
 			switch k {
-			case "modulus":
-				p.PublicKey.N = new(big.Int).SetBytes(v1)
 			case "publicexponent":
-				i := new(big.Int).SetBytes(v1)
-				p.PublicKey.E = int(i.Int64()) // int64 should be large enough
+				E = new(big.Int).SetBytes(v1)
+			case "modulus":
+				N = new(big.Int).SetBytes(v1)
 			case "privateexponent":
-				p.D = new(big.Int).SetBytes(v1)
+				D = new(big.Int).SetBytes(v1)
 			case "prime1":
-				p.Primes[0] = new(big.Int).SetBytes(v1)
+				P = new(big.Int).SetBytes(v1)
 			case "prime2":
-				p.Primes[1] = new(big.Int).SetBytes(v1)
+				Q = new(big.Int).SetBytes(v1)
 			}
 		case "exponent1", "exponent2", "coefficient":
 			// not used in Go (yet)
@@ -103,47 +97,68 @@ func readPrivateKeyRSA(m map[string]string) (*rsa.PrivateKey, error) {
 			// not used in Go (yet)
 		}
 	}
-	return p, nil
+	return openssl.BuildRSAPrivateKey(E, N, D, P, Q)
 }
 
-func readPrivateKeyECDSA(m map[string]string) (*ecdsa.PrivateKey, error) {
-	p := new(ecdsa.PrivateKey)
-	p.D = new(big.Int)
+// readPrivateKeyECDSA parses a bind9 private key file. Example:
+// Private-key-format: v1.3
+// Algorithm: 13 (ECDSAP256SHA256)
+// PrivateKey: 17LMblUjtpdu2Bt5iCtyoJOtCofUGag6MaFKXQm8W+0=
+// Created: 20260513224606
+// Publish: 20260513224606
+// Activate: 20260513224606
+func readPrivateKeyECDSA(m map[string]string) (openssl.PrivateKey, error) {
+	var D *big.Int
+	var groupname string // curve
 	// TODO: validate that the required flags are present
 	for k, v := range m {
 		switch k {
+		// make this a parameter
+		case "algorithm":
+			algoStr, _, _ := strings.Cut(v, " ")
+			algo, err := strconv.ParseUint(algoStr, 10, 8)
+			if err != nil {
+				return nil, err
+			}
+			groupname = AlgorithmToCurve[uint8(algo)]
 		case "privatekey":
 			v1, err := fromBase64([]byte(v))
 			if err != nil {
 				return nil, err
 			}
-			p.D.SetBytes(v1)
+			D = new(big.Int).SetBytes(v1)
 		case "created", "publish", "activate":
 			/* not used in Go (yet) */
 		}
 	}
-	return p, nil
+	return openssl.BuildECDSAPrivateKey(D, groupname)
 }
 
-func readPrivateKeyED25519(m map[string]string) (ed25519.PrivateKey, error) {
-	var p ed25519.PrivateKey
+func readPrivateKeyED25519(m map[string]string) (openssl.PrivateKey, error) {
+	var bytes []byte
+	var algName string
+	var err error
 	// TODO: validate that the required flags are present
 	for k, v := range m {
 		switch k {
-		case "privatekey":
-			p1, err := fromBase64([]byte(v))
+		// make this a parameter
+		case "algorithm":
+			algoStr, _, _ := strings.Cut(v, " ")
+			algo, err := strconv.ParseUint(algoStr, 10, 8)
 			if err != nil {
 				return nil, err
 			}
-			if len(p1) != ed25519.SeedSize {
-				return nil, ErrPrivKey
+			algName = AlgorithmToString[uint8(algo)]
+		case "privatekey":
+			bytes, err = fromBase64([]byte(v))
+			if err != nil {
+				return nil, err
 			}
-			p = ed25519.NewKeyFromSeed(p1)
 		case "created", "publish", "activate":
 			/* not used in Go (yet) */
 		}
 	}
-	return p, nil
+	return openssl.BuildRawPrivateKey(bytes, algName)
 }
 
 // parseKey reads a private key from r. It returns a map[string]string,

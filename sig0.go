@@ -1,11 +1,7 @@
 package dns
 
 import (
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
 	"encoding/binary"
-	"math/big"
 	"time"
 
 	"github.com/pexip/go-openssl"
@@ -147,39 +143,29 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 		return &Error{err: "signer name doesn't match key name"}
 	}
 	sigend := offset
-	h.Write(buf[sigstart:sigend])
-	h.Write(buf[:10])
-	h.Write([]byte{
-		byte((adc - 1) << 8),
-		byte(adc - 1),
-	})
-	h.Write(buf[12:bodyend])
+	combined := make([]byte, 0, len(buf[sigstart:sigend])+10+2+len(buf[12:bodyend]))
+	combined = append(combined, buf[sigstart:sigend]...)
+	combined = append(combined, buf[:10]...)
+	combined = append(combined, byte((adc-1)<<8), byte(adc-1))
+	combined = append(combined, buf[12:bodyend]...)
 
-	hashed := h.Sum(nil)
 	sig := buf[sigend:]
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA512:
 		pk := k.publicKeyRSA()
 		if pk != nil {
-			return rsa.VerifyPKCS1v15(pk, cryptohash, hashed, sig)
+			return pk.VerifyPKCS1v15(h, combined, sig)
+			//return rsa.VerifyPKCS1v15(pk, cryptohash, hashed, sig)
 		}
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pk := k.publicKeyECDSA()
-		r := new(big.Int).SetBytes(sig[:len(sig)/2])
-		s := new(big.Int).SetBytes(sig[len(sig)/2:])
 		if pk != nil {
-			if ecdsa.Verify(pk, hashed, r, s) {
-				return nil
-			}
-			return ErrSig
+			return pk.VerifyPKCS1v15(h, combined, sig)
 		}
 	case ED25519:
-		pk := k.publicKeyED25519()
+		pk := k.publicKeyGeneric()
 		if pk != nil {
-			if ed25519.Verify(pk, hashed, sig) {
-				return nil
-			}
-			return ErrSig
+			return pk.VerifyPKCS1v15(h, combined, sig)
 		}
 	}
 	return ErrKeyAlg

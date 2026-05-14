@@ -3,9 +3,7 @@ package dns
 import (
 	"bytes"
 	"crypto"
-	"crypto/ecdsa"
 	"crypto/ed25519"
-	"crypto/rsa"
 	_ "crypto/sha1"   // need its init function
 	_ "crypto/sha256" // need its init function
 	_ "crypto/sha512" // need its init function
@@ -81,6 +79,12 @@ var AlgorithmToHash = map[uint8]string{
 	ECDSAP384SHA384:  "sha384",
 	RSASHA512:        "sha512",
 	ED25519:          "",
+}
+
+// AlgorithmToCurve maps an algorithm to the correct curve.
+var AlgorithmToCurve = map[uint8]string{
+	ECDSAP256SHA256: "prime256v1",
+	ECDSAP384SHA384: "secp384r1",
 }
 
 // DNSSEC hashing algorithm codes.
@@ -436,7 +440,9 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 	// if rr.Algorithm == PRIVATEDNS { // PRIVATEOID
 	// }
 
-	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	//h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
+
 	if err != nil {
 		return err
 	}
@@ -449,10 +455,10 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 			return ErrKey
 		}
 
-		h.Write(signeddata)
-		h.Write(wire)
+		signeddata = append(signeddata, wire...)
 
-		return rsa.VerifyPKCS1v15(pubkey, cryptohash, h.Sum(nil), sigbuf)
+		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
+		//return rsa.VerifyPKCS1v15(pubkey, cryptohash, h.Sum(nil), sigbuf)
 
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pubkey := k.publicKeyECDSA()
@@ -461,26 +467,28 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		}
 
 		// Split sigbuf into the r and s coordinates
-		r := new(big.Int).SetBytes(sigbuf[:len(sigbuf)/2])
-		s := new(big.Int).SetBytes(sigbuf[len(sigbuf)/2:])
+		//r := new(big.Int).SetBytes(sigbuf[:len(sigbuf)/2])
+		//s := new(big.Int).SetBytes(sigbuf[len(sigbuf)/2:])
 
-		h.Write(signeddata)
-		h.Write(wire)
-		if ecdsa.Verify(pubkey, h.Sum(nil), r, s) {
-			return nil
-		}
-		return ErrSig
+		signeddata = append(signeddata, wire...)
+		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
+		//if ecdsa.Verify(pubkey, h.Sum(nil), r, s) {
+		//	return nil
+		//}
+		//return ErrSig
 
 	case ED25519:
-		pubkey := k.publicKeyED25519()
+		pubkey := k.publicKeyGeneric()
 		if pubkey == nil {
 			return ErrKey
 		}
+		signeddata = append(signeddata, wire...)
+		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
 
-		if ed25519.Verify(pubkey, append(signeddata, wire...), sigbuf) {
-			return nil
-		}
-		return ErrSig
+		//if ed25519.Verify(pubkey, append(signeddata, wire...), sigbuf) {
+		//	return nil
+		//}
+		//return ErrSig
 
 	default:
 		return ErrAlg
@@ -564,7 +572,7 @@ func (k *DNSKEY) publicKeyRSA() openssl.PublicKey {
 
 	//pubkey.E = int(expo)
 	//pubkey.N = new(big.Int).SetBytes(keybuf[modoff:])
-	pubkey, err := openssl.BuildRSAKey(new(big.Int).SetUint64(expo), new(big.Int).SetBytes(keybuf[modoff:]))
+	pubkey, err := openssl.BuildRSAPublicKey(new(big.Int).SetUint64(expo), new(big.Int).SetBytes(keybuf[modoff:]))
 	if err != nil {
 		return nil
 	}
@@ -584,13 +592,13 @@ func (k *DNSKEY) publicKeyECDSA() openssl.PublicKey {
 			// wrongly encoded key
 			return nil
 		}
-		pubkey, err = openssl.BuildECDSAKey(keybuf, "prime256v1")
+		pubkey, err = openssl.BuildECDSAPublicKey(keybuf, "prime256v1")
 	case ECDSAP384SHA384:
 		if len(keybuf) != 96 {
 			// Wrongly encoded key
 			return nil
 		}
-		pubkey, err = openssl.BuildECDSAKey(keybuf, "secp384r1")
+		pubkey, err = openssl.BuildECDSAPublicKey(keybuf, "secp384r1")
 	default:
 		return nil
 	}
@@ -625,7 +633,7 @@ func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
 		if len(keybuf) != ed25519.PublicKeySize {
 			return nil
 		}
-		pubkey, err = openssl.BuildRawKey(keybuf)
+		pubkey, err = openssl.BuildRawPublicKey(keybuf, AlgorithmToString[k.Algorithm])
 	default:
 		return nil
 	}

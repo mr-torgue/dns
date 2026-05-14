@@ -70,7 +70,7 @@ func (k *DNSKEY) Generate(bits int) (openssl.PrivateKey, error) {
 		if err != nil {
 			return nil, err
 		}
-		X, Y, err := openssl.GetParamsECDSA(priv)
+		X, Y, err := openssl.GetECDSAPublicKey(priv)
 		if err != nil {
 			return nil, err
 		}
@@ -131,7 +131,7 @@ func (k *DNSKEY) setPublicKeyGeneric(_K openssl.PublicKey) bool {
 	if _K == nil {
 		return false
 	}
-	bytes, err := openssl.GetRawKey(_K)
+	bytes, err := openssl.GetRawPublicKey(_K)
 	if err != nil {
 		return false
 	}

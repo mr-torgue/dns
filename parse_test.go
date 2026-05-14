@@ -2,7 +2,6 @@ package dns
 
 import (
 	"bytes"
-	"crypto/rsa"
 	"encoding/hex"
 	"fmt"
 	"math/rand"
@@ -1276,10 +1275,10 @@ func TestNewPrivateKey(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		switch newPrivKey := newPrivKey.(type) {
-		case *rsa.PrivateKey:
-			newPrivKey.Precompute()
-		}
+		//switch newPrivKey := newPrivKey.(type) {
+		//case *rsa.PrivateKey:
+		//	newPrivKey.Precompute()
+		//}
 
 		if !reflect.DeepEqual(privkey, newPrivKey) {
 			t.Errorf("[%v] Private keys differ:\n%#v\n%#v", AlgorithmToString[algo.name], privkey, newPrivKey)

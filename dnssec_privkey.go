@@ -1,12 +1,10 @@
 package dns
 
 import (
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/ed25519"
-	"crypto/rsa"
 	"math/big"
 	"strconv"
+
+	"github.com/pexip/go-openssl"
 )
 
 const format = "Private-key-format: v1.3\n"
@@ -17,25 +15,28 @@ var bigIntOne = big.NewInt(1)
 // format as the private-key-file of BIND9 (Private-key-format: v1.3).
 // It needs some info from the key (the algorithm), so its a method of the DNSKEY.
 // It supports *rsa.PrivateKey, *ecdsa.PrivateKey and ed25519.PrivateKey.
-func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
+func (r *DNSKEY) PrivateKeyString(p openssl.PrivateKey) string {
 	algorithm := strconv.Itoa(int(r.Algorithm))
 	algorithm += " (" + AlgorithmToString[r.Algorithm] + ")"
 
-	switch p := p.(type) {
-	case *rsa.PrivateKey:
-		modulus := toBase64(p.PublicKey.N.Bytes())
-		e := big.NewInt(int64(p.PublicKey.E))
-		publicExponent := toBase64(e.Bytes())
-		privateExponent := toBase64(p.D.Bytes())
-		prime1 := toBase64(p.Primes[0].Bytes())
-		prime2 := toBase64(p.Primes[1].Bytes())
+	switch r.Algorithm {
+	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512:
+		E, N, D, P, Q, err := openssl.GetParamsRSAPrivate(p)
+		if err != nil {
+			return ""
+		}
+		publicExponent := toBase64(E.Bytes())
+		modulus := toBase64(N.Bytes())
+		privateExponent := toBase64(D.Bytes())
+		prime1 := toBase64(P.Bytes())
+		prime2 := toBase64(Q.Bytes())
 		// Calculate Exponent1/2 and Coefficient as per: http://en.wikipedia.org/wiki/RSA#Using_the_Chinese_remainder_algorithm
 		// and from: http://code.google.com/p/go/issues/detail?id=987
-		p1 := new(big.Int).Sub(p.Primes[0], bigIntOne)
-		q1 := new(big.Int).Sub(p.Primes[1], bigIntOne)
-		exp1 := new(big.Int).Mod(p.D, p1)
-		exp2 := new(big.Int).Mod(p.D, q1)
-		coeff := new(big.Int).ModInverse(p.Primes[1], p.Primes[0])
+		p1 := new(big.Int).Sub(P, bigIntOne)
+		q1 := new(big.Int).Sub(Q, bigIntOne)
+		exp1 := new(big.Int).Mod(D, p1)
+		exp2 := new(big.Int).Mod(D, q1)
+		coeff := new(big.Int).ModInverse(Q, P)
 
 		exponent1 := toBase64(exp1.Bytes())
 		exponent2 := toBase64(exp2.Bytes())
@@ -52,7 +53,11 @@ func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 			"Exponent2: " + exponent2 + "\n" +
 			"Coefficient: " + coefficient + "\n"
 
-	case *ecdsa.PrivateKey:
+	case ECDSAP256SHA256, ECDSAP384SHA384:
+		D, err := openssl.GetECDSAPrivateKey(p)
+		if err != nil {
+			return ""
+		}
 		var intlen int
 		switch r.Algorithm {
 		case ECDSAP256SHA256:
@@ -60,13 +65,17 @@ func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 		case ECDSAP384SHA384:
 			intlen = 48
 		}
-		private := toBase64(intToBytes(p.D, intlen))
+		private := toBase64(intToBytes(D, intlen))
 		return format +
 			"Algorithm: " + algorithm + "\n" +
 			"PrivateKey: " + private + "\n"
 
-	case ed25519.PrivateKey:
-		private := toBase64(p.Seed())
+	case ED25519:
+		raw, err := openssl.GetRawPrivateKey(p)
+		if err != nil {
+			return ""
+		}
+		private := toBase64(raw)
 		return format +
 			"Algorithm: " + algorithm + "\n" +
 			"PrivateKey: " + private + "\n"
