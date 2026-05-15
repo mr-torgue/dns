@@ -1,7 +1,9 @@
 package dns
 
 import (
+	"encoding/asn1"
 	"encoding/binary"
+	"math/big"
 	"time"
 
 	"github.com/pexip/go-openssl"
@@ -38,7 +40,7 @@ func (rr *SIG) Sign(k openssl.PrivateKey, m *Msg) ([]byte, error) {
 	//h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
 	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
 
-	signdata := append(buf[:len(mbuf)], buf[len(mbuf)+1+2+2+4+2:]...)
+	signdata := append(buf[len(mbuf)+1+2+2+4+2:], buf[:len(mbuf)]...)
 
 	signature, err := sign(k, h, signdata, rr.Algorithm)
 	if err != nil {
@@ -159,8 +161,17 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 		}
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pk := k.publicKeyECDSA()
+		// Split sigbuf into the r and s coordinates and convert to DER signature
+		r := new(big.Int).SetBytes(sig[:len(sig)/2])
+		s := new(big.Int).SetBytes(sig[len(sig)/2:])
+		asn1Bytes, err := asn1.Marshal(struct {
+			R, S *big.Int
+		}{r, s})
+		if err != nil {
+			return err
+		}
 		if pk != nil {
-			return pk.VerifyPKCS1v15(h, combined, sig)
+			return pk.VerifyPKCS1v15(h, combined, asn1Bytes)
 		}
 	case ED25519:
 		pk := k.publicKeyGeneric()

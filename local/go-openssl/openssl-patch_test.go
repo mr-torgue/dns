@@ -463,6 +463,25 @@ func TestGenerateSignVerify(t *testing.T) {
 		}
 	}
 
+	// test if running it twice with the same key delivers a different result
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	n = 2
+	for _, keyResult := range keyResults {
+		for _, digest := range digests {
+			for i := 0; i < n; i++ {
+				// Process each key with each digest
+				require.Nil(t, keyResult.Err, fmt.Sprintf("Err should be nil for %s", keyResult.Algorithm))
+				require.NotNil(t, keyResult.PrivKey, fmt.Sprintf("PrivKey should not be nil for %s", keyResult.Algorithm))
+				signature, err := keyResult.PrivKey.SignPKCS1v15(digest, data)
+				require.Nil(t, err, fmt.Sprintf("Signature err should be nil for %s", keyResult.Algorithm))
+				require.NotNil(t, signature, fmt.Sprintf("signature should not be nil for %s", keyResult.Algorithm))
+				err = keyResult.PrivKey.VerifyPKCS1v15(digest, data, signature)
+				require.Nil(t, err, fmt.Sprintf("Verification err should be nil for %s", keyResult.Algorithm))
+				assert.Nil(t, ensureErrorQueueIsClear(), "there should be no openssl errors")
+			}
+		}
+	}
+
 	// test with ciphers that don't require a digest
 	var keyResultsWithoutDigest []struct {
 		Algorithm string
@@ -488,12 +507,13 @@ func TestGenerateSignVerify(t *testing.T) {
 			require.NotNil(t, signature, fmt.Sprintf("signature should not be nil for %s", keyResult.Algorithm))
 			err = keyResult.PrivKey.VerifyPKCS1v15(nil, data, signature)
 			require.Nil(t, err, fmt.Sprintf("Verification err should be nil for %s", keyResult.Algorithm))
+			assert.Nil(t, ensureErrorQueueIsClear(), "there should be no openssl errors")
 		}
 	}
 
 	digest, _ := GetDigestByName("sha256", true)
 	digest2, _ := GetDigestByName("sha1", true)
-	data := make([]byte, 10+rand.Intn(91))
+	data = make([]byte, 10+rand.Intn(91))
 	rand.Read(data)
 	// test mismatching digests
 	priv, err = GenerateKey("rsa3072_falconpadded512")
@@ -508,6 +528,7 @@ func TestGenerateSignVerify(t *testing.T) {
 	// test running without digest
 	signature, err = priv.SignPKCS1v15(nil, data)
 	require.NotNil(t, err, "Signature err should not be nil because no digest is provided")
+
 }
 
 // Benchmarks

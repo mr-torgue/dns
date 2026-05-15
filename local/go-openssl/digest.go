@@ -19,6 +19,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"strings"
 	"unsafe"
@@ -147,7 +148,7 @@ func (d *DigestJob) VerifyFinal(signature []byte, key *pKey) error {
 	if C.EVP_VerifyFinal(
 		d.ctx, (*C.uchar)(unsafe.Pointer(&signature[0])), C.uint(len(signature)), key.key,
 	) != 1 {
-		return errorFromErrorQueue()
+		return fmt.Errorf("digest operation failed: %w", errorFromErrorQueue())
 	}
 	return nil
 }
@@ -178,6 +179,10 @@ func GetDigestByName(algorithm string, allowNonFIPS bool) (*Digest, error) {
 
 	digest := C.EVP_MD_fetch(libCtx.ctx, cname, nil)
 	if digest == nil {
+		err := errorFromErrorQueue()
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch digest: %w", err)
+		}
 		return nil, ErrUnknownDigest
 	}
 

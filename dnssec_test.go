@@ -82,6 +82,117 @@ func TestSignature(t *testing.T) {
 	}
 }
 
+func TestSignVerify2(t *testing.T) {
+
+	// import and verify the keys for RSA
+	pubkey, err := ReadRR(strings.NewReader(`
+example.com. IN DNSKEY 256 3 8 AwEAAaifTuraCcWF1sG/dwRmJ1Rw4n2fIZQ9Ouf7aZ6nalFkrG+5y+AO tb6/xJSQhlrvp7SNaAiV9S9opGhLG9gE8gRWYaDCvsD6hEcAy9AFNAvc +n/lv8wHkR01y1sxfqjszGMPSbJrrVxg/Qqe4/5Iq79GVG8Bvb7rXeVA Felpe5Kp
+`), "Kexample.com.+008+30813.key")
+	require.Nil(t, err, "err should be nil")
+
+	privStr := `Private-key-format: v1.3
+Algorithm: 8 (RSASHA256)
+Modulus: qJ9O6toJxYXWwb93BGYnVHDifZ8hlD065/tpnqdqUWSsb7nL4A61vr/ElJCGWu+ntI1oCJX1L2ikaEsb2ATyBFZhoMK+wPqERwDL0AU0C9z6f+W/zAeRHTXLWzF+qOzMYw9JsmutXGD9Cp7j/kirv0ZUbwG9vutd5UAV6Wl7kqk=
+PublicExponent: AQAB
+PrivateExponent: gBXzJmZVgdr2lNnRmF/YhEXzZaUZJreUJV9OjZtyIT2t1nh1q07BM5ILyyY1SKI+6+F2Iv917Xs5V5emIOMwymsEGM6jTZJCBp1afLT2phOtborlU3UCh74QxZoIGneMyn9ixe8ORbspGEXOtupMfQKF47ezdWHvmKXQ4akftrk=
+Prime1: 0Tp1ePgGfqTgf5DJLlCpEWwPktjXlujyL4P56SLQ+0p1bC1qD5oZBEFlfqfRPrwnZ8oa6Rj7vDDRXG8vEAmY3w==
+Prime2: zlEUqwTWaNPDhiwCsot/INH9DLVzu9wXpRL6/uqNrabm65TLLGdo37yvzASH/iRrdEMv4ApCCmcaDYs6nJPddw==
+Exponent1: G9XqMQjWXFz1HSOXEFlc1NuKit/cdtBRAC9PvUuLgBMc4iJ8nMzEjUNiDGKpPO5tU6qYv/A59YSNJf4IxdpxAw==
+Exponent2: qjBuGSjzaSOOPWaejwPNSZiO4mXn40aJ5qzCiXeYiW+NOzXRZ36iHzW52lS+jaEjVpN5sZkkoworjpKUNccvvw==
+Coefficient: ONc1U/hQ0usCbCPc9DqZTD/kSFtDEOJkbzjRf78UcftFw3SVf7rqFeRBOAfvbadgdZPREOYfXW3su0hwRPUYrQ==
+`
+	privkey, err := pubkey.(*DNSKEY).ReadPrivateKey(strings.NewReader(privStr),
+		"Kexample.com.+008+30813.private")
+	require.Nil(t, err, "err should be nil")
+
+	if pubkey.(*DNSKEY).PublicKey != "AwEAAaifTuraCcWF1sG/dwRmJ1Rw4n2fIZQ9Ouf7aZ6nalFkrG+5y+AOtb6/xJSQhlrvp7SNaAiV9S9opGhLG9gE8gRWYaDCvsD6hEcAy9AFNAvc+n/lv8wHkR01y1sxfqjszGMPSbJrrVxg/Qqe4/5Iq79GVG8Bvb7rXeVAFelpe5Kp" {
+		t.Error("pubkey is not what we've read")
+	}
+	if pubkey.(*DNSKEY).PrivateKeyString(privkey) != privStr {
+		t.Error("privkey is not what we've read")
+		t.Errorf("%v", pubkey.(*DNSKEY).PrivateKeyString(privkey))
+	}
+
+	cname := new(CNAME)
+	cname.Hdr = RR_Header{"www.example.com.", TypeCNAME, ClassINET, 86400, 0}
+	cname.Target = "example.com."
+	expectedCNAMESignature := "MjFzO8IWZ7cCVMi5w16Hv2U1ShzDMSLmTsjxBO8ABONmznwwg38cqbovYT+oFgm28XXJ8+EjXLhODEVMc5M23jq5YqZd2TcxkiKpytCJstEyQFLDxCIxa8DbMyd/V5sZ66FKsZ56AMWBJdTM5fNm8Xn0mDVSBjL/MkTWlTUAw5I="
+
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"example.com.", TypeCNAME, ClassINET, 86400, 0}
+	sig.TypeCovered = TypeCNAME
+	sig.Expiration = 1779235200            // date -u '+%s' -d"2026-05-20 00:00:00"
+	sig.Inception = 1778803200             // date -u '+%s' -d"2026-05-15 00:00:00"
+	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
+	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
+	sig.Algorithm = RSASHA256
+	err = sig.Sign(privkey, []RR{cname})
+	require.Nil(t, err, "err should be nil")
+	assert.Equal(t, expectedCNAMESignature, sig.Signature, "signatures should be equal")
+
+	ns1 := new(NS)
+	ns1.Hdr = RR_Header{"example.com.", TypeNS, ClassINET, 86400, 0}
+	ns1.Ns = "ns1.example.com."
+	ns2 := new(NS)
+	ns2.Hdr = RR_Header{"example.com.", TypeNS, ClassINET, 86400, 0}
+	ns2.Ns = "ns2.example.com."
+	expectedNSSignature := "KYYNkHvDs96bml/m5eeTPUGswIfHOAwMHeznUL3CRwXPN/jYo0yMJBA0Zd7gyIWG/ERXwkZz8R7xeSRl7T89X5+iomVzN5HTCYuaxjoA5A1sbGy/gP4CqC1DUiaR1IiQF6ogLP5RWEQZ+4JlYjto3cpCEQJBoSnVZVAcsp6no50="
+
+	sig = new(RRSIG)
+	sig.Hdr = RR_Header{"example.com.", TypeNS, ClassINET, 86400, 0}
+	sig.TypeCovered = TypeNS
+	sig.Expiration = 1779235200            // date -u '+%s' -d"2026-05-20 00:00:00"
+	sig.Inception = 1778803200             // date -u '+%s' -d"2026-05-15 00:00:00"
+	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
+	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
+	sig.Algorithm = RSASHA256
+	err = sig.Sign(privkey, []RR{ns2, ns1})
+	require.Nil(t, err, "err should be nil")
+	assert.Equal(t, expectedNSSignature, sig.Signature, "signatures should be equal")
+
+	err = sig.Verify(pubkey.(*DNSKEY), []RR{ns2, ns1})
+	require.Nil(t, err, "err should be nil")
+
+	// import and verify the keys for ECDSA (signature changes)
+	pubkey, err = ReadRR(strings.NewReader(`
+example.com. IN DNSKEY 256 3 13 NCzoLSlxCjrZDZ5zKTq6LgllKqWV/pCCq1o7HZ5/T3Z8zhpTcZemiZQEJLR9roNKh0pO88ML+XcR9L4GbxRB1w==
+`), "Kexample.com.+013+23186.key")
+	require.Nil(t, err, "err should be nil")
+
+	privStr = `Private-key-format: v1.3
+Algorithm: 13 (ECDSAP256SHA256)
+PrivateKey: vg6oG9cg9A0spN/6YrtMvASSdZHIxazupgtCNCP0Mmg=
+`
+	privkey, err = pubkey.(*DNSKEY).ReadPrivateKey(strings.NewReader(privStr),
+		"Kexample.com.+013+23186.private")
+	require.Nil(t, err, "err should be nil")
+
+	assert.Equal(t, "NCzoLSlxCjrZDZ5zKTq6LgllKqWV/pCCq1o7HZ5/T3Z8zhpTcZemiZQEJLR9roNKh0pO88ML+XcR9L4GbxRB1w==", pubkey.(*DNSKEY).PublicKey, "public keys should be equal")
+	assert.Equal(t, privStr, pubkey.(*DNSKEY).PrivateKeyString(privkey), "private keys should be equal")
+
+	cname = new(CNAME)
+	cname.Hdr = RR_Header{"www.example.com.", TypeCNAME, ClassINET, 86400, 0}
+	cname.Target = "example.com."
+
+	sig = new(RRSIG)
+	sig.Hdr = RR_Header{"example.com.", TypeCNAME, ClassINET, 86400, 0}
+	sig.TypeCovered = TypeCNAME
+	sig.Expiration = 1779235200            // date -u '+%s' -d"2026-05-20 00:00:00"
+	sig.Inception = 1778803200             // date -u '+%s' -d"2026-05-15 00:00:00"
+	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
+	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
+	sig.Algorithm = ECDSAP256SHA256
+	err = sig.Sign(privkey, []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+
+	// one of the valid signatures (signatures include randomness so they change)
+	sig.Signature = "oLxEpiV2MPvjpIPwYXzwD6cWnDWMRFepC4LFRXkecqdgXYzP/vaGczQZ9958t9WmU9im2z4HugXAcyjk2zwZvQ=="
+	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+}
+
 func TestSignVerify(t *testing.T) {
 	// The record we want to sign
 	soa := new(SOA)
@@ -121,41 +232,55 @@ func TestSignVerify(t *testing.T) {
 		Os:  "Y",
 	}
 
-	// With this key
-	key := new(DNSKEY)
-	key.Hdr.Rrtype = TypeDNSKEY
-	key.Hdr.Name = "miek.nl."
-	key.Hdr.Class = ClassINET
-	key.Hdr.Ttl = 14400
-	key.Flags = 256
-	key.Protocol = 3
-	key.Algorithm = RSASHA256
-	privkey, err := key.Generate(1024)
-	if err != nil {
-		t.Fatal("failure to generate private key:", err)
+	// Test with different algorithms
+	algorithms := []struct {
+		name      string
+		algorithm uint8
+		bitsize   int
+	}{
+		//{"RSA", RSASHA256, 2048},
+		//{"ECDSA", ECDSAP256SHA256, 256},
+		{"EdDSA", ED25519, 256},
 	}
 
-	// Fill in the values of the Sig, before signing
-	sig := new(RRSIG)
-	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
-	sig.TypeCovered = soa.Hdr.Rrtype
-	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
-	sig.OrigTtl = soa.Hdr.Ttl
-	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
-	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
-	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
-	sig.SignerName = key.Hdr.Name
-	sig.Algorithm = RSASHA256
+	for _, algo := range algorithms {
+		t.Run(algo.name, func(t *testing.T) {
+			// With this key
+			key := new(DNSKEY)
+			key.Hdr.Rrtype = TypeDNSKEY
+			key.Hdr.Name = "miek.nl."
+			key.Hdr.Class = ClassINET
+			key.Hdr.Ttl = 14400
+			key.Flags = 256
+			key.Protocol = 3
+			key.Algorithm = algo.algorithm
+			privkey, err := key.Generate(algo.bitsize)
+			if err != nil {
+				t.Fatal("failure to generate private key:", err)
+			}
 
-	for _, r := range []RR{soa, soa1, srv, hinfo} {
-		if err := sig.Sign(privkey, []RR{r}); err != nil {
-			t.Error("failure to sign the record:", err)
-			continue
-		}
-		if err := sig.Verify(key, []RR{r}); err != nil {
-			t.Errorf("failure to validate: %s", r.Header().Name)
-			continue
-		}
+			// Fill in the values of the Sig, before signing
+			sig := new(RRSIG)
+			sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+			sig.TypeCovered = soa.Hdr.Rrtype
+			sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+			sig.OrigTtl = soa.Hdr.Ttl
+			sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+			sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+			sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+			sig.SignerName = key.Hdr.Name
+			sig.Algorithm = algo.algorithm
+			for _, r := range []RR{soa, soa1, srv, hinfo} {
+				if err := sig.Sign(privkey, []RR{r}); err != nil {
+					t.Error("failure to sign the record:", err)
+					continue
+				}
+				if err := sig.Verify(key, []RR{r}); err != nil {
+					t.Errorf("failure to validate: %s", r.Header().Name)
+					continue
+				}
+			}
+		})
 	}
 }
 
@@ -406,6 +531,10 @@ func TestKeyRSA(t *testing.T) {
 	}
 }
 
+// TestKeyToDS tests if the DS record is generated correctly.
+// You can use the following to generate records:
+//  1. dnssec-keygen -a [ALGORITHM] -b 2048 -n ZONE -f KSK example.com
+//  2. dnssec-dsfromkey [-1/-2] [NAME].key
 func TestKeyToDS(t *testing.T) {
 	key := new(DNSKEY)
 	key.Hdr.Name = "miek.nl."
@@ -421,6 +550,53 @@ func TestKeyToDS(t *testing.T) {
 	if strings.ToUpper(ds.Digest) != "B5121BDB5B8D86D0CC5FFAFBAAABE26C3E20BAC1" {
 		t.Errorf("wrong DS digest for SHA1\n%v", ds)
 	}
+
+	key = new(DNSKEY)
+	key.Hdr.Name = "example.com."
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 3600
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA512
+	key.PublicKey = "AwEAAfXlz23ENZBWhb7Di40JF7Zo5dPR80sbJ/LfAo9GXGefXWJet7NYLoMrJz5jGyz04GR+pfrg7CnFmAVXblgoy7QFMPN3YU7nLmpybw8CWC9WVxlsQPdm0XC1UXUIjsTSG8KnsYdGLEhP2LxMssamxOCyEDEmKERPL/ifWwUPjo6gFQcrw+IHaRuizF+Jx8t8b8IswvU0undeFCh9z2zgzPcs1n7PqGn/ZA62j0zY2u1Uki1U1+6nj1WS+SsrPXnATebCbC0voHHbQQlSUARtj8tPBZgCUbxEhF2I15QfwQPnswmSbFqHJMKf3jC67BqhH+0QVWmy74LLDxgLWEV11os="
+	ds = key.ToDS(SHA1)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.NotEqual(t, "01D718FD5B2E38FE95836EF85D258502F747D14A", strings.ToUpper(ds.Digest), "SHA1 hashes should not match")
+	key.Algorithm = RSASHA256
+	ds = key.ToDS(SHA1)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "01D718FD5B2E38FE95836EF85D258502F747D14A", strings.ToUpper(ds.Digest), "SHA1 hashes should match")
+	ds = key.ToDS(SHA256)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "9765B0367EB8684147909B51FF7BEFC89EE06A703CF0DEE68677D77C33862F55", strings.ToUpper(ds.Digest), "SHA256 hashes should match")
+	ds = key.ToDS(SHA384)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "43C38C65FE251FC08130C69D2C10704720916BCD390D5C44E9AF91A598DE7BF581811E5EE8B57EC3FCF5A8999F53C264", strings.ToUpper(ds.Digest), "SHA384 hashes should match")
+
+	key = new(DNSKEY)
+	key.Hdr.Name = "example.com."
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 3600
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA512
+	key.PublicKey = "Ule+j1b34r+28QMRLdfuXNKdZBbU/yTB27jomZZBrLlmsRDivwkr0GAv/WurTWuQczcH1Wu3cLiILaJu5sg4LjcS8IAPJMu+uQunMKR7ecOWBZJ/0mcDEPSg79CckwKP"
+	ds = key.ToDS(SHA1)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.NotEqual(t, "6E3EC3AEED5FAC6A392E8A704BB18BAE25CAAA64", strings.ToUpper(ds.Digest), "SHA1 hashes should not match")
+	key.Flags = 257
+	key.Algorithm = ECDSAP384SHA384
+	ds = key.ToDS(SHA1)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "6E3EC3AEED5FAC6A392E8A704BB18BAE25CAAA64", strings.ToUpper(ds.Digest), "SHA1 hashes should match")
+	ds = key.ToDS(SHA256)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "A0AA822FCF822F64BEAAB7F9F15DAA86EC80CF4C1CF38A9D6158D2D7CCD74D48", strings.ToUpper(ds.Digest), "SHA256 hashes should match")
+	ds = key.ToDS(SHA384)
+	require.NotNil(t, ds, "ds should not be nil")
+	assert.Equal(t, "A3FE95E1354CDF71D4701027F759B2BC36F4BE0B09D1375AAD939E0BE6328DA3813E37DD0F3F560C980B213F8416475C", strings.ToUpper(ds.Digest), "SHA384 hashes should match")
 }
 
 func TestSignRSA(t *testing.T) {
@@ -496,6 +672,7 @@ PrivateKey: WURgWHCcYIYUPWgeLmiPY2DJJk02vgrmTfitxgqcL4vwW7BOrbawVmVe0d9V94SR`
 	}
 	// TODO: Create separate test for this
 	ds := eckey.(*DNSKEY).ToDS(SHA384)
+	require.NotNil(t, ds, "ds should not be nil")
 	if ds.KeyTag != 10771 {
 		t.Fatal("wrong keytag on DS")
 	}

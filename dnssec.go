@@ -2,11 +2,6 @@ package dns
 
 import (
 	"bytes"
-	"crypto"
-	"crypto/ed25519"
-	_ "crypto/sha1"   // need its init function
-	_ "crypto/sha256" // need its init function
-	_ "crypto/sha512" // need its init function
 	"encoding/asn1"
 	"encoding/binary"
 	"encoding/hex"
@@ -213,24 +208,32 @@ func (k *DNSKEY) ToDS(h uint8) *DS {
 	// "|" denotes concatenation
 	// DNSKEY RDATA = Flags | Protocol | Algorithm | Public Key.
 
-	var hash crypto.Hash
+	// TODO(mr-torgue): clean up code
+	var digestJob *openssl.DigestJob
 	switch h {
 	case SHA1:
-		hash = crypto.SHA1
+		digestJob, err = openssl.NewSHA1Hash()
 	case SHA256:
-		hash = crypto.SHA256
+		digestJob, err = openssl.NewSHA256Hash()
 	case SHA384:
-		hash = crypto.SHA384
+		digest, err := openssl.GetDigestByName("sha384", false)
+		if err != nil {
+			return nil
+		}
+		digestJob, err = openssl.NewDigestJob(*digest)
 	case SHA512:
-		hash = crypto.SHA512
+		digest, err := openssl.GetDigestByName("sha512", false)
+		if err != nil {
+			return nil
+		}
+		digestJob, err = openssl.NewDigestJob(*digest)
 	default:
 		return nil
 	}
-
-	s := hash.New()
-	s.Write(owner)
-	s.Write(wire)
-	ds.Digest = hex.EncodeToString(s.Sum(nil))
+	digestJob.Write(owner)
+	digestJob.Write(wire)
+	bytes, err := digestJob.Sum()
+	ds.Digest = hex.EncodeToString(bytes)
 	return ds
 }
 
@@ -326,6 +329,7 @@ func (rr *RRSIG) signAsIs(k openssl.PrivateKey, rrset []RR) error {
 }
 
 func sign(k openssl.PrivateKey, h *openssl.Digest, data []byte, alg uint8) ([]byte, error) {
+	//return k.SignPKCS1v15(h, data)
 	signature, err := k.SignPKCS1v15(h, data)
 	//var k2 crypto.Signer
 	//k2.Sign(rand.Reader, hashed, hash)
@@ -466,12 +470,18 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 			return ErrKey
 		}
 
-		// Split sigbuf into the r and s coordinates
-		//r := new(big.Int).SetBytes(sigbuf[:len(sigbuf)/2])
-		//s := new(big.Int).SetBytes(sigbuf[len(sigbuf)/2:])
+		// Split sigbuf into the r and s coordinates and convert to DER signature
+		r := new(big.Int).SetBytes(sigbuf[:len(sigbuf)/2])
+		s := new(big.Int).SetBytes(sigbuf[len(sigbuf)/2:])
+		asn1Bytes, err := asn1.Marshal(struct {
+			R, S *big.Int
+		}{r, s})
+		if err != nil {
+			return err
+		}
 
 		signeddata = append(signeddata, wire...)
-		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
+		return pubkey.VerifyPKCS1v15(h, signeddata, asn1Bytes)
 		//if ecdsa.Verify(pubkey, h.Sum(nil), r, s) {
 		//	return nil
 		//}
@@ -617,7 +627,8 @@ func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
 	var pubkey openssl.PublicKey
 	switch k.Algorithm {
 	case ED25519:
-		if len(keybuf) != ed25519.PublicKeySize {
+		// ed25519.PublicKeySize (removed so that we can omit package)
+		if len(keybuf) != 32 {
 			return nil
 		}
 		pubkey, err = openssl.BuildRawPublicKey(keybuf, AlgorithmToString[k.Algorithm])
