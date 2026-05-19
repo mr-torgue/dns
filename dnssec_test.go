@@ -238,9 +238,14 @@ func TestSignVerify(t *testing.T) {
 		algorithm uint8
 		bitsize   int
 	}{
-		//{"RSA", RSASHA256, 2048},
-		//{"ECDSA", ECDSAP256SHA256, 256},
+		{"RSA", RSASHA256, 2048},
+		{"ECDSA", ECDSAP256SHA256, 256},
 		{"EdDSA", ED25519, 256},
+		{"FALCON512", FALCON512, 1281},
+		{"FALCON512", FALCON1024, 2305},
+		{"FALCON512", P521_FALCON1024, 2532},
+		{"FALCON512", RSA3072_FALCON512, 3055},
+		{"FALCON512", P256_FALCON512, 1406},
 	}
 
 	for _, algo := range algorithms {
@@ -276,7 +281,7 @@ func TestSignVerify(t *testing.T) {
 					continue
 				}
 				if err := sig.Verify(key, []RR{r}); err != nil {
-					t.Errorf("failure to validate: %s", r.Header().Name)
+					t.Errorf("failure to validate: %s, error: %s", r.Header().Name, err)
 					continue
 				}
 			}
@@ -1165,5 +1170,1224 @@ func TestRSAMD5KeyTag(t *testing.T) {
 	}
 	if x := rr2.(*DNSKEY).KeyTag(); x != exp { // yes, same key tag
 		t.Errorf("expected %d, got %d, as keytag for rr2", exp, x)
+	}
+}
+
+// Benchmarks
+
+// Generate benchmarks
+
+// BenchmarkGenerateRSA generates a DNSKEY record using RSASHA256
+func BenchmarkGenerateRSA(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA256
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(2048)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateECDSA generates a DNSKEY record using ECDSAP256SHA256
+func BenchmarkGenerateECDSA(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ECDSAP256SHA256
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(256)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateRawKeyED25519 generates a DNSKEY record using ED25519
+func BenchmarkGenerateED25519(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ED25519
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(256)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateFALCON512 generates a DNSKEY record using FALCON512
+func BenchmarkGenerateFALCON512(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON512
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(1281)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateP256FALCON512 generates a DNSKEY record using P256_FALCON512
+func BenchmarkGenerateP256FALCON512(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P256_FALCON512
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(1406)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateRSA3072FALCON512 generates a DNSKEY record using RSA3072_FALCON512
+func BenchmarkGenerateRSA3072FALCON512(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSA3072_FALCON512
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(3055)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateFALCON1024 generates a DNSKEY record using FALCON1024
+func BenchmarkGenerateFALCON1024(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON1024
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(2305)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// BenchmarkGenerateP521FALCON1024 generates a DNSKEY record using P521_FALCON1024
+func BenchmarkGenerateP521FALCON1024(b *testing.B) {
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P521_FALCON1024
+	for i := 0; i < b.N; i++ {
+		_, err := key.Generate(2532)
+		require.Nil(b, err, "err should be nil")
+	}
+}
+
+// Sign benchmarks
+
+func BenchmarkSignRSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA256
+	privkey, err := key.Generate(2048)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSASHA256
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignECDSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ECDSAP256SHA256
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ECDSAP256SHA256
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignED25519(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ED25519
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ED25519
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignFALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON512
+	privkey, err := key.Generate(1281)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignP256_FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P256_FALCON512
+	privkey, err := key.Generate(1406)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P256_FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignRSA3072FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSA3072_FALCON512
+	privkey, err := key.Generate(3055)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSA3072_FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignFALCON1024(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON1024
+	privkey, err := key.Generate(2305)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON1024
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+func BenchmarkSignP521FALCON1024(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P521_FALCON1024
+	privkey, err := key.Generate(2532)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P521_FALCON1024
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+	}
+}
+
+// Verify benchmarks
+
+func BenchmarkVerifyRSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA256
+	privkey, err := key.Generate(2048)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSASHA256
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyECDSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ECDSAP256SHA256
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ECDSAP256SHA256
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyED25519(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ED25519
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ED25519
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyFALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON512
+	privkey, err := key.Generate(1281)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON512
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyP256FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P256_FALCON512
+	privkey, err := key.Generate(1406)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P256_FALCON512
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyRSA3072FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSA3072_FALCON512
+	privkey, err := key.Generate(3055)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSA3072_FALCON512
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyFALCON1024(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON1024
+	privkey, err := key.Generate(2305)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON1024
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkVerifyP521FALCON1024(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P521_FALCON1024
+	privkey, err := key.Generate(2532)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P521_FALCON1024
+
+	err = sig.Sign(privkey, []RR{soa})
+	require.Nil(b, err, "sign err should be nil")
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+// Sign and verify benchmarks
+
+func BenchmarkSignVerifyRSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSASHA256
+	privkey, err := key.Generate(2048)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSASHA256
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyECDSA(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ECDSAP256SHA256
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ECDSAP256SHA256
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyED25519(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = ED25519
+	privkey, err := key.Generate(256)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = ED25519
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyFALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON512
+	privkey, err := key.Generate(1281)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyP256FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P256_FALCON512
+	privkey, err := key.Generate(1406)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P256_FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyRSA3072FALCON512(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = RSA3072_FALCON512
+	privkey, err := key.Generate(3055)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = RSA3072_FALCON512
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyFALCON1024(b *testing.B) {
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = FALCON1024
+	privkey, err := key.Generate(2305)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = FALCON1024
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
+	}
+}
+
+func BenchmarkSignVerifyP521FALCON1024(b *testing.B) {
+
+	var err error
+	// create record to sign
+	soa := new(SOA)
+	soa.Hdr = RR_Header{"*.miek.nl.", TypeSOA, ClassINET, 14400, 0}
+	soa.Ns = "open.nlnetlabs.nl."
+	soa.Mbox = "miekg.atoom.net."
+	soa.Serial = 1293945905
+	soa.Refresh = 14400
+	soa.Retry = 3600
+	soa.Expire = 604800
+	soa.Minttl = 86400
+
+	// create DNSKEY RR
+	key := new(DNSKEY)
+	key.Hdr.Rrtype = TypeDNSKEY
+	key.Hdr.Name = "miek.nl."
+	key.Hdr.Class = ClassINET
+	key.Hdr.Ttl = 14400
+	key.Flags = 256
+	key.Protocol = 3
+	key.Algorithm = P521_FALCON1024
+	privkey, err := key.Generate(2532)
+	require.Nil(b, err, "err should be nil")
+
+	// create RRSIG
+	sig := new(RRSIG)
+	sig.Hdr = RR_Header{"miek.nl.", TypeRRSIG, ClassINET, 14400, 0}
+	sig.TypeCovered = soa.Hdr.Rrtype
+	sig.Labels = uint8(CountLabel(soa.Hdr.Name)) // works for all 3
+	sig.OrigTtl = soa.Hdr.Ttl
+	sig.Expiration = 1296534305 // date -u '+%s' -d"2011-02-01 04:25:05"
+	sig.Inception = 1293942305  // date -u '+%s' -d"2011-01-02 04:25:05"
+	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
+	sig.SignerName = key.Hdr.Name
+	sig.Algorithm = P521_FALCON1024
+
+	for i := 0; i < b.N; i++ {
+		err = sig.Sign(privkey, []RR{soa})
+		require.Nil(b, err, "sign err should be nil")
+		err = sig.Verify(key, []RR{soa})
+		require.Nil(b, err, "verify err should be nil")
 	}
 }

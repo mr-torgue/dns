@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/pexip/go-openssl"
@@ -12,7 +13,7 @@ import (
 // what kind of DNSKEY will be generated.
 // The ECDSA algorithms imply a fixed keysize, in that case
 // bits should be set to the size of the algorithm.
-// TODO(mr-torgue): add support for PQC
+// TODO (mr-torgue): I don't think the key length checks are needed, so we might remove them.
 func (k *DNSKEY) Generate(bits int) (openssl.PrivateKey, error) {
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA1NSEC3SHA1:
@@ -36,7 +37,23 @@ func (k *DNSKEY) Generate(bits int) (openssl.PrivateKey, error) {
 			return nil, ErrKeySize
 		}
 	case FALCON512:
-		if bits != 666 {
+		if bits != 1281 {
+			return nil, ErrKeySize
+		}
+	case P256_FALCON512:
+		if bits != 1406 {
+			return nil, ErrKeySize
+		}
+	case RSA3072_FALCON512:
+		if bits != 3055 {
+			return nil, ErrKeySize
+		}
+	case FALCON1024:
+		if bits != 2305 {
+			return nil, ErrKeySize
+		}
+	case P521_FALCON1024:
+		if bits != 2532 {
 			return nil, ErrKeySize
 		}
 	default:
@@ -83,6 +100,15 @@ func (k *DNSKEY) Generate(bits int) (openssl.PrivateKey, error) {
 			return nil, err
 		}
 		k.setPublicKeyGeneric(priv)
+		return priv, nil
+	case FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024:
+		priv, err := openssl.GenerateKey(AlgorithmToString[k.Algorithm])
+		if err != nil {
+			return nil, err
+		}
+		if !k.setPublicKeyGeneric(priv) {
+			return nil, errors.New("could not set generic public key")
+		}
 		return priv, nil
 	default:
 		return nil, ErrAlg

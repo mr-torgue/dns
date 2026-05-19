@@ -32,32 +32,42 @@ const (
 	ECDSAP384SHA384
 	ED25519
 	ED448
-	INDIRECT   uint8 = 252
-	PRIVATEDNS uint8 = 253 // Private (experimental keys)
-	PRIVATEOID uint8 = 254
 
 	// OQS
 	FALCON512
+	P256_FALCON512
+	RSA3072_FALCON512
+	FALCON1024
+	P521_FALCON1024
+
+	INDIRECT   uint8 = 252
+	PRIVATEDNS uint8 = 253 // Private (experimental keys)
+	PRIVATEOID uint8 = 254
 )
 
 // AlgorithmToString is a map of algorithm IDs to algorithm names.
 var AlgorithmToString = map[uint8]string{
-	RSAMD5:           "RSAMD5",
-	DH:               "DH",
-	DSA:              "DSA",
-	RSASHA1:          "RSASHA1",
-	DSANSEC3SHA1:     "DSA-NSEC3-SHA1",
-	RSASHA1NSEC3SHA1: "RSASHA1-NSEC3-SHA1",
-	RSASHA256:        "RSASHA256",
-	RSASHA512:        "RSASHA512",
-	ECCGOST:          "ECC-GOST",
-	ECDSAP256SHA256:  "ECDSAP256SHA256",
-	ECDSAP384SHA384:  "ECDSAP384SHA384",
-	ED25519:          "ED25519",
-	ED448:            "ED448",
-	INDIRECT:         "INDIRECT",
-	PRIVATEDNS:       "PRIVATEDNS",
-	PRIVATEOID:       "PRIVATEOID",
+	RSAMD5:            "RSAMD5",
+	DH:                "DH",
+	DSA:               "DSA",
+	RSASHA1:           "RSASHA1",
+	DSANSEC3SHA1:      "DSA-NSEC3-SHA1",
+	RSASHA1NSEC3SHA1:  "RSASHA1-NSEC3-SHA1",
+	RSASHA256:         "RSASHA256",
+	RSASHA512:         "RSASHA512",
+	ECCGOST:           "ECC-GOST",
+	ECDSAP256SHA256:   "ECDSAP256SHA256",
+	ECDSAP384SHA384:   "ECDSAP384SHA384",
+	ED25519:           "ED25519",
+	ED448:             "ED448",
+	INDIRECT:          "INDIRECT",
+	PRIVATEDNS:        "PRIVATEDNS",
+	PRIVATEOID:        "PRIVATEOID",
+	FALCON512:         "falconpadded512",
+	P256_FALCON512:    "p256_falconpadded512",
+	RSA3072_FALCON512: "rsa3072_falconpadded512",
+	FALCON1024:        "falconpadded1024",
+	P521_FALCON1024:   "p521_falconpadded1024",
 }
 
 // AlgorithmToHash is a map of algorithm crypto hash IDs to crypto.Hash's.
@@ -65,15 +75,20 @@ var AlgorithmToString = map[uint8]string{
 // is 0, implying no (external) hashing should occur. The non-exported identityHash is then
 // used.
 var AlgorithmToHash = map[uint8]string{
-	RSAMD5:           "md5", // Deprecated in RFC 6725
-	DSA:              "sha1",
-	RSASHA1:          "sha1",
-	RSASHA1NSEC3SHA1: "sha1",
-	RSASHA256:        "sha256",
-	ECDSAP256SHA256:  "sha256",
-	ECDSAP384SHA384:  "sha384",
-	RSASHA512:        "sha512",
-	ED25519:          "",
+	RSAMD5:            "md5", // Deprecated in RFC 6725
+	DSA:               "sha1",
+	RSASHA1:           "sha1",
+	RSASHA1NSEC3SHA1:  "sha1",
+	RSASHA256:         "sha256",
+	ECDSAP256SHA256:   "sha256",
+	ECDSAP384SHA384:   "sha384",
+	RSASHA512:         "sha512",
+	FALCON512:         "sha256",
+	P256_FALCON512:    "sha256",
+	RSA3072_FALCON512: "sha256",
+	FALCON1024:        "sha256",
+	P521_FALCON1024:   "sha256",
+	ED25519:           "",
 }
 
 // AlgorithmToCurve maps an algorithm to the correct curve.
@@ -338,7 +353,7 @@ func sign(k openssl.PrivateKey, h *openssl.Digest, data []byte, alg uint8) ([]by
 	}
 
 	switch alg {
-	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512, ED25519:
+	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512, ED25519, FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024:
 		return signature, nil
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		ecdsaSignature := &struct {
@@ -487,7 +502,7 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		//}
 		//return ErrSig
 
-	case ED25519:
+	case ED25519, FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024:
 		pubkey := k.publicKeyGeneric()
 		if pubkey == nil {
 			return ErrKey
@@ -619,6 +634,7 @@ func (k *DNSKEY) publicKeyECDSA() openssl.PublicKey {
 }
 
 // publicKeyGeneric uses the raw key
+// TODO (mr-torgue): I don't think the key length checks are needed, so we might remove them.
 func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
 	keybuf, err := fromBase64([]byte(k.PublicKey))
 	if err != nil {
@@ -631,6 +647,8 @@ func (k *DNSKEY) publicKeyGeneric() openssl.PublicKey {
 		if len(keybuf) != 32 {
 			return nil
 		}
+		pubkey, err = openssl.BuildRawPublicKey(keybuf, AlgorithmToString[k.Algorithm])
+	case FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024:
 		pubkey, err = openssl.BuildRawPublicKey(keybuf, AlgorithmToString[k.Algorithm])
 	default:
 		return nil

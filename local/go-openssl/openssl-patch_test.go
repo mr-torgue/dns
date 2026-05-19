@@ -177,6 +177,15 @@ func TestGetRawKey(t *testing.T) {
 	require.Nil(t, bytes, "bytes should be nil")
 
 	// test-case 4: load EC key (not supported)
+	bytes, err = os.ReadFile("testdata/keys/ECDSA-public_key.der")
+	require.Nil(t, err, "error should be nil")
+	require.NotNil(t, bytes, "bytes should not be nil")
+	pub, err = LoadPublicKeyFromDER(bytes)
+	require.Nil(t, err, "error should be nil")
+	require.NotNil(t, pub, "pub should not be nil")
+	bytes, err = GetRawPublicKey(pub)
+	require.NotNil(t, err, "error should not be nil")
+	require.Nil(t, bytes, "bytes should be nil")
 
 	// test-case 5: load EDDSA
 	bytes, err = os.ReadFile("testdata/keys/ED25519-public_key.der")
@@ -193,6 +202,18 @@ func TestGetRawKey(t *testing.T) {
 	assert.Equal(t, rawkeybytes, bytes, "raw key did not match")
 
 	// test-case 6: load FALCON512
+	bytes, err = os.ReadFile("testdata/keys/FALCON512-public_key.der")
+	require.Nil(t, err, "error should be nil")
+	require.NotNil(t, bytes, "bytes should not be nil")
+	pub, err = LoadPublicKeyFromDER(bytes)
+	require.Nil(t, err, "error should be nil")
+	require.NotNil(t, pub, "pub should not be nil")
+	bytes, err = GetRawPublicKey(pub)
+	require.Nil(t, err, "error should be nil")
+	require.NotNil(t, bytes, "bytes should not be nil")
+	rawkeybytes = []byte{0x09, 0x91, 0x60, 0x2c, 0x03, 0x07, 0xe2, 0xf4, 0x03, 0x70, 0x7a, 0x84, 0xac, 0xc1, 0x83, 0x56, 0x10, 0x96, 0x2a, 0x03, 0x63, 0x67, 0xac, 0xba, 0xc0, 0x8a, 0x29, 0x48, 0x2e, 0x0b, 0x68, 0x52, 0x7a, 0x7e, 0xc8, 0x46, 0x6f, 0x3c, 0x7b, 0xd9, 0xf4, 0x01, 0xaa, 0x8e, 0x8c, 0xcc, 0xd3, 0xbc, 0x69, 0x0f, 0x4c, 0x3e, 0x1c, 0x8b, 0x70, 0x46, 0x69, 0x75, 0xe4, 0x9d, 0xe4, 0xf9, 0x1b, 0xd1, 0x7e, 0xfa, 0xb5, 0xb3, 0xf2, 0x0b, 0x62, 0x95, 0xa2, 0xde, 0xb7, 0x24, 0xde, 0xf7, 0x8d, 0x80, 0x2a, 0xb5, 0x71, 0x51, 0xd3, 0x7c, 0x71, 0x57, 0xda, 0xe0, 0x27, 0x35, 0x53, 0x1a, 0x1d, 0x06, 0x47, 0xe5, 0x2d, 0x17, 0x45, 0x7a, 0x55, 0xa4, 0x45, 0x2c, 0x2e, 0xaa, 0x58, 0x91, 0xfa, 0xe7, 0xdd, 0x63, 0x96, 0x15, 0x94, 0x50, 0xd1, 0x4a, 0x3e, 0xfe, 0x10, 0x16, 0x5a, 0x85, 0x70, 0x21, 0x74, 0xeb, 0xa6, 0x85, 0xee, 0xb5, 0x89, 0xb6, 0x98, 0xc5, 0x38, 0x95, 0x0a, 0x78, 0x3c, 0xbf, 0xa6, 0xb3, 0xa6, 0xaf, 0xbe, 0x1d, 0xb5, 0xc0, 0xf4, 0x87, 0x9c, 0xb0, 0xa4, 0xa8, 0x34, 0x6f, 0xaa, 0xf8, 0x6c, 0xc1, 0xde, 0xd0, 0x10, 0x1d, 0x1a, 0x1a, 0x96, 0x8d, 0x91, 0xb5, 0xd4, 0xcc, 0x92, 0x96, 0xe7, 0x10, 0x27, 0x48, 0x2e, 0x33, 0x81, 0xa7, 0x9b, 0x99, 0x8c, 0x28, 0x00, 0xb8, 0x01, 0xc2, 0xba, 0x44, 0x3b, 0x52, 0x39, 0x38, 0xa5, 0xcd, 0xad, 0x8a, 0x2c, 0xd4, 0x34, 0x34, 0x00, 0xde, 0xe8, 0xaf, 0x0a, 0x69, 0xfb, 0xd3, 0x1a, 0x9c, 0x8b, 0x24, 0xbb, 0x06, 0x42, 0xcb, 0x7e, 0x46, 0x2e, 0x4d, 0xbb, 0x4b, 0xab, 0xa3, 0xa1, 0xe1, 0x6c, 0x97, 0x23, 0x6b, 0x6b, 0x77, 0x12, 0x97, 0xa6, 0x0c, 0x6d, 0xc9, 0x38, 0x42, 0x6f, 0x57, 0x17, 0xe3, 0x90, 0x26, 0x7d, 0x3f, 0x4b, 0x5f, 0x24, 0x89, 0x68, 0x60, 0x31, 0x72, 0x1f, 0xd3, 0xec, 0x7b, 0x7d, 0x3e, 0x49, 0x21, 0xd7, 0x93, 0x93, 0x3a, 0x6f, 0xb6, 0x03, 0x9f, 0x62, 0x27, 0x79, 0x6e, 0xc2, 0xd7, 0x9e, 0xc4, 0x5b, 0x6c, 0xaa, 0xb4, 0xab, 0xe9, 0x61, 0xa5, 0xa6, 0xee, 0xf4, 0xb4, 0x54, 0x73, 0x1f, 0x9e, 0x32, 0xb8, 0x76, 0x9d, 0x06, 0x7f, 0xde, 0xf4, 0xc4, 0x70, 0x85, 0x1a, 0x68, 0x64, 0xff, 0x24, 0x03, 0x16, 0x52, 0x6d, 0xde, 0x53, 0x81, 0xbf, 0x16, 0xc9, 0x5f, 0xc9, 0xba, 0x83, 0x3e, 0x0e, 0xee, 0xab, 0x30, 0xcf, 0x26, 0x43, 0x85, 0x74, 0xa0, 0x62, 0x79, 0x20, 0xb1, 0x13, 0x51, 0x62, 0xc9, 0x11, 0xf1, 0x08, 0xdc, 0x0c, 0x3b, 0xd6, 0x57, 0xa5, 0x7d, 0x87, 0x21, 0x9f, 0xe6, 0x9a, 0x2b, 0x58, 0x55, 0x7b, 0x55, 0x6a, 0x2a, 0x56, 0x29, 0x2f, 0x6d, 0x64, 0x14, 0x11, 0x42, 0x3d, 0x98, 0x3e, 0x37, 0x0e, 0xb9, 0x13, 0xed, 0x5c, 0x92, 0xa8, 0x3d, 0xe7, 0xe7, 0xb7, 0xe3, 0x05, 0xab, 0xcd, 0x5f, 0x9a, 0xb8, 0x25, 0x37, 0x9c, 0x0c, 0x5a, 0x6b, 0x57, 0x87, 0x35, 0x11, 0x89, 0x9d, 0x78, 0x18, 0xca, 0xca, 0x89, 0xa8, 0xe9, 0xb7, 0xde, 0x4a, 0x5b, 0x6b, 0xa0, 0x31, 0x7a, 0xca, 0x05, 0xeb, 0x9e, 0xde, 0xc0, 0xa4, 0xff, 0x07, 0x7a, 0x9e, 0x12, 0x6b, 0xf1, 0xc4, 0x86, 0xea, 0x8b, 0x15, 0x7b, 0xb2, 0x28, 0x05, 0xa7, 0x6e, 0x46, 0x03, 0xf5, 0xb2, 0x14, 0x18, 0x66, 0xa1, 0xf2, 0xb9, 0xad, 0xef, 0xe5, 0x9f, 0x5e, 0x2b, 0x60, 0xf7, 0x63, 0xf4, 0x4c, 0xdc, 0xac, 0xd3, 0x3a, 0x8f, 0x0c, 0x72, 0xfc, 0x5f, 0xc9, 0xd1, 0x41, 0xfb, 0x7d, 0xf2, 0x76, 0x9b, 0x35, 0xd8, 0x89, 0x92, 0x2c, 0x90, 0xe7, 0xa7, 0x25, 0x1d, 0x4f, 0xc6, 0xea, 0xb0, 0x75, 0x59, 0xfe, 0xa6, 0xc6, 0xe1, 0xf4, 0x93, 0xd4, 0x7b, 0x1f, 0x59, 0xf8, 0x49, 0x82, 0x00, 0x95, 0xae, 0x7e, 0x9e, 0x36, 0x75, 0x1f, 0x44, 0x36, 0xad, 0xa8, 0x80, 0x88, 0xa0, 0xa4, 0x1e, 0xbe, 0xf9, 0x19, 0xb7, 0xe2, 0x3d, 0xb6, 0x41, 0x36, 0x35, 0xd6, 0xd0, 0x7f, 0x8b, 0xb9, 0x5c, 0x04, 0x40, 0x81, 0x5b, 0xb1, 0x61, 0x14, 0x35, 0xd1, 0x87, 0x5f, 0x1d, 0x2a, 0x0a, 0xf0, 0xc7, 0x08, 0xc1, 0x7f, 0xd9, 0x8f, 0xb9, 0x7b, 0x6b, 0xd6, 0x7a, 0x72, 0x13, 0x82, 0x7a, 0x1d, 0x27, 0x27, 0x11, 0x92, 0x13, 0x0f, 0xcb, 0xfe, 0x38, 0xd2, 0x4f, 0xd9, 0xa2, 0x8f, 0x3f, 0xb4, 0xa0, 0xc0, 0x43, 0x3b, 0xc4, 0xef, 0xb2, 0xf5, 0x1a, 0x86, 0x18, 0xa3, 0x0c, 0x20, 0x8c, 0x34, 0x53, 0xed, 0xa4, 0x9e, 0x1f, 0x9c, 0xb8, 0x47, 0xef, 0x4c, 0xa9, 0x01, 0xfd, 0x71, 0x20, 0x74, 0x46, 0xb3, 0x3a, 0xe0, 0x23, 0xa8, 0x21, 0x05, 0x3b, 0x47, 0x45, 0x47, 0xfa, 0xfd, 0x17, 0x33, 0x12, 0x2c, 0x18, 0xd4, 0xf5, 0x96, 0xff, 0xb0, 0x6d, 0x54, 0xb7, 0x7f, 0xcf, 0xdf, 0x8a, 0x38, 0xb1, 0xf8, 0x98, 0x8f, 0x26, 0x80, 0x14, 0xdf, 0x70, 0xbe, 0x1d, 0xbe, 0xb8, 0xa6, 0x0f, 0x6b, 0x8e, 0x09, 0xe3, 0x13, 0x78, 0x73, 0x30, 0xd7, 0x24, 0xf4, 0x72, 0x81, 0x0c, 0x2b, 0xe0, 0xad, 0x68, 0x46, 0x29, 0x4f, 0xe2, 0x4e, 0x61, 0xb4, 0x55, 0x44, 0xa0, 0xda, 0x82, 0x17, 0xbd, 0x1f, 0x14, 0xcd, 0x66, 0xef, 0x2c, 0xf8, 0x25, 0xa0, 0x12, 0x02, 0x89, 0xa0, 0xec, 0x9f, 0x46, 0x3c, 0xb6, 0x74, 0x4c, 0x45, 0x12, 0xde, 0x20, 0x55, 0x67, 0xa6, 0xe1, 0x59, 0x95, 0x16, 0xd9, 0xa1, 0x97, 0x76, 0x3f, 0xb8, 0x36, 0x0a, 0x6e, 0x9e, 0xd0, 0x8f, 0x5d, 0xb3, 0xa8, 0x21, 0x45, 0x3c, 0xb7, 0x2c, 0x35, 0x71, 0x84, 0x08, 0x87, 0x81, 0x71, 0x8b, 0x75, 0xe5, 0xa5, 0x60, 0x08, 0xb6, 0x37, 0xe6, 0xbd, 0x89, 0x9d, 0xb5, 0xbd, 0x81, 0xe8, 0x10, 0x1b, 0x0b, 0x9d, 0xc1, 0x2c, 0x55, 0x1b, 0x08, 0xbc, 0x6c, 0x62, 0x1c, 0xf9, 0xa6, 0xd6, 0x39, 0x68, 0x88, 0xee, 0xd1, 0xda, 0x6d, 0xe8, 0x5d, 0x89, 0xa4, 0x64, 0x67, 0x02, 0xbe, 0x2e, 0x8d, 0xf0, 0xc6, 0xeb, 0xdc, 0xdc, 0xb6, 0xda, 0x1b, 0x62, 0x27, 0xd5, 0x89, 0x0d, 0xa0, 0x7b, 0xb1, 0x7f, 0x00, 0x06, 0x26, 0x10, 0x65, 0x54, 0x69, 0x0d, 0x1a, 0xa5, 0x99, 0x3f, 0xba, 0xcc, 0xa3, 0x8e, 0x72, 0x22, 0x3e, 0xe4, 0xa1, 0xcb, 0xf0, 0x33, 0x32, 0x1d, 0x90, 0xd6, 0xca, 0x3e, 0x44, 0xd1, 0x55, 0xda, 0xa3, 0xca, 0xf7, 0x47, 0x58, 0x14, 0x86, 0x38, 0xcd, 0x2a, 0x1a, 0x06, 0x23, 0xf4, 0xaa, 0xac, 0xba, 0x1a, 0x2d, 0x28, 0x19, 0xed, 0x54, 0xcb}
+	assert.Equal(t, len(rawkeybytes), len(bytes), "raw key length did not match")
+	assert.Equal(t, rawkeybytes, bytes, "raw key did not match")
 
 	// test-case 7: load P256_FALCON512
 	bytes, err = os.ReadFile("testdata/keys/P256_FALCON512-public_key.der")
@@ -392,6 +413,97 @@ func TestGenerateBuildRawKey(t *testing.T) {
 
 }
 
+// TestKeySignatureSize verifies if the signatures and keys have the expected sizes
+func TestKeySignatureSize(t *testing.T) {
+	var keyResults []struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}
+	// RSA3072-FALCON512 hybrid key generation
+	// pub size: 1299
+	// priv size:
+	// sig size : 666 + 384 + 4 (index) = 1054
+	priv, err := GenerateKey("rsa3072_falconpadded512")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}{"RSA3072_FALCON512", priv, err, 1299, 3055, 1054})
+	// P256-FALCON512 hybrid key generation
+	// pub size:
+	// priv size:
+	// sig size : 666 + 64 + 4 (index) = 734
+	priv, err = GenerateKey("p256_falconpadded512")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}{"P256_FALCON512", priv, err, 966, 1406, 742})
+	// FALCON512
+	priv, err = GenerateKey("falconpadded512")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}{"FALCON512", priv, err, 897, 1281, 666})
+	// FALCON1024
+	priv, err = GenerateKey("falconpadded1024")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}{"FALCON1024", priv, err, 1793, 2305, 1280})
+	// FALCON1024
+	priv, err = GenerateKey("p521_falconpadded1024")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+		PubSize   int
+		PrivSize  int
+		SigSize   int
+	}{"P521_FALCON1024", priv, err, 1930, 2532, 1422})
+
+	digest, _ := GetDigestByName("sha256", true)
+	n := 10
+	for i := 0; i < n; i++ {
+		data := make([]byte, 10+rand.Intn(91))
+		rand.Read(data)
+		for _, keyResult := range keyResults {
+			// Process each key with each digest
+			require.Nil(t, keyResult.Err, fmt.Sprintf("Err should be nil for %s", keyResult.Algorithm))
+			require.NotNil(t, keyResult.PrivKey, fmt.Sprintf("PrivKey should not be nil for %s", keyResult.Algorithm))
+			signature, err := keyResult.PrivKey.SignPKCS1v15(digest, data)
+			require.Nil(t, err, fmt.Sprintf("Signature err should be nil for %s", keyResult.Algorithm))
+			require.NotNil(t, signature, fmt.Sprintf("signature should not be nil for %s", keyResult.Algorithm))
+			assert.Equal(t, keyResult.SigSize, len(signature), fmt.Sprintf("Signature lengths should match for %s", keyResult.Algorithm))
+			privbytes, err := GetRawPrivateKey(keyResult.PrivKey)
+			require.Nil(t, err, fmt.Sprintf("Priv err should be nil for %s", keyResult.Algorithm))
+			assert.Equal(t, keyResult.PrivSize, len(privbytes), fmt.Sprintf("Private key lengths should match for %s", keyResult.Algorithm))
+			pubbytes, err := GetRawPublicKey(keyResult.PrivKey)
+			require.Nil(t, err, fmt.Sprintf("Pub err should be nil for %s", keyResult.Algorithm))
+			assert.Equal(t, keyResult.PubSize, len(pubbytes), fmt.Sprintf("Public key lengths should match for %s", keyResult.Algorithm))
+
+		}
+	}
+}
+
 // TestGenerateSignVerify generates, signs, and verifies data
 // with different ciphers.
 func TestGenerateSignVerify(t *testing.T) {
@@ -437,13 +549,41 @@ func TestGenerateSignVerify(t *testing.T) {
 			Err       error
 		}{"ED25519", priv, err})
 	*/
-	// RSA-FALCON hybrid key generation
+	// RSA3072-FALCON512 hybrid key generation
 	priv, err := GenerateKey("rsa3072_falconpadded512")
 	keyResults = append(keyResults, struct {
 		Algorithm string
 		PrivKey   PrivateKey
 		Err       error
 	}{"RSA3072_FALCON512", priv, err})
+	// P256-FALCON512 hybrid key generation
+	priv, err = GenerateKey("p256_falconpadded512")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+	}{"P256_FALCON512", priv, err})
+	// FALCON512
+	priv, err = GenerateKey("falconpadded512")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+	}{"FALCON512", priv, err})
+	// FALCON1024
+	priv, err = GenerateKey("falconpadded1024")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+	}{"FALCON1024", priv, err})
+	// FALCON1024
+	priv, err = GenerateKey("p521_falconpadded1024")
+	keyResults = append(keyResults, struct {
+		Algorithm string
+		PrivKey   PrivateKey
+		Err       error
+	}{"P521_FALCON1024", priv, err})
 
 	n := 3
 	for i := 0; i < n; i++ {
@@ -533,26 +673,301 @@ func TestGenerateSignVerify(t *testing.T) {
 
 // Benchmarks
 
+// Generate benchmarks
+func BenchmarkGenerateRSA(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateRSAKey(2048)
+	}
+}
+func BenchmarkGenerateECDSA(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateECKey(Prime256v1)
+	}
+}
+func BenchmarkGenerateRawKeyED25519(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateKey("ED25519")
+	}
+}
+func BenchmarkGenerateED25519(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateED25519Key()
+	}
+}
+func BenchmarkGenerateRawKeyFALCON512(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateKey("falconpadded512")
+	}
+}
+func BenchmarkGenerateRawKeyP256FALCON512(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateKey("p256_falconpadded512")
+	}
+}
 func BenchmarkGenerateRawKeyRSA3072FALCON512(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		GenerateKey("rsa3072_falconpadded512")
 	}
 }
+func BenchmarkGenerateRawKeyFALCON1024(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateKey("falconpadded1024")
+	}
+}
 
+func BenchmarkGenerateRawKeyP521FALCON1024(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GenerateKey("p521_falconpadded1024")
+	}
+}
+
+// Sign benchmarks
+func BenchmarkSignRSA(b *testing.B) {
+	priv, _ := GenerateRSAKey(2048)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
+	}
+}
+func BenchmarkSignECDSA(b *testing.B) {
+	priv, _ := GenerateECKey(Prime256v1)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
+	}
+}
+func BenchmarkSignED25519(b *testing.B) {
+	priv, _ := GenerateED25519Key()
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(nil, data)
+	}
+}
+func BenchmarkSignFALCON512(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
+	}
+}
+func BenchmarkSignP256_FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("p256_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
+	}
+}
 func BenchmarkSignRSA3072FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("rsa3072_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
 	for i := 0; i < b.N; i++ {
-		GenerateKey("rsa3072_falconpadded512")
+		priv.SignPKCS1v15(digest, data)
+	}
+}
+func BenchmarkSignFALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
+	}
+}
+func BenchmarkSignP521FALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("p521_falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		priv.SignPKCS1v15(digest, data)
 	}
 }
 
+// Verify benchmarks
+func BenchmarkVerifyRSA(b *testing.B) {
+	priv, _ := GenerateRSAKey(2048)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkVerifyECDSA(b *testing.B) {
+	priv, _ := GenerateECKey(Prime256v1)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkVerifyED25519(b *testing.B) {
+	priv, _ := GenerateED25519Key()
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	signature, _ := priv.SignPKCS1v15(nil, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(nil, data, signature)
+	}
+}
+func BenchmarkVerifyFALCON512(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkVerifyP256FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("p256_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
 func BenchmarkVerifyRSA3072FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("rsa3072_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
 	for i := 0; i < b.N; i++ {
-		GenerateKey("rsa3072_falconpadded512")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkVerifyFALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkVerifyP521FALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("p521_falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	signature, _ := priv.SignPKCS1v15(digest, data)
+	require.NotNil(b, signature, "signature should not be nil")
+	for i := 0; i < b.N; i++ {
+		priv.VerifyPKCS1v15(digest, data, signature)
 	}
 }
 
-func BenchmarkGenerateRawKeyED25519(b *testing.B) {
+// Sign and verify benchmarks
+func BenchmarkSignVerifyRSA(b *testing.B) {
+	priv, _ := GenerateRSAKey(2048)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
 	for i := 0; i < b.N; i++ {
-		GenerateKey("ED25519")
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyECDSA(b *testing.B) {
+	priv, _ := GenerateECKey(Prime256v1)
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyED25519(b *testing.B) {
+	priv, _ := GenerateED25519Key()
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(nil, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(nil, data, signature)
+	}
+}
+func BenchmarkSignVerifyFALCON512(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyP256FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("p256_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyRSA3072FALCON512(b *testing.B) {
+	priv, _ := GenerateKey("rsa3072_falconpadded512")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyFALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
+	}
+}
+func BenchmarkSignVerifyP521FALCON1024(b *testing.B) {
+	priv, _ := GenerateKey("p521_falconpadded1024")
+	require.NotNil(b, priv, "priv should not be nil")
+	data := []byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A}
+	digest, _ := GetDigestByName("sha256", true)
+	for i := 0; i < b.N; i++ {
+		signature, _ := priv.SignPKCS1v15(digest, data)
+		require.NotNil(b, signature, "signature should not be nil")
+		priv.VerifyPKCS1v15(digest, data, signature)
 	}
 }

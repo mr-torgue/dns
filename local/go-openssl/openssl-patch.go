@@ -449,7 +449,7 @@ func buildECDSAKey(private bool, key []byte, groupname string) (PrivateKey, erro
 // GetRawPrivateKey returns the raw private key.
 // Based on https://github.com/mr-torgue/OQS-bind/blob/b9bb22a50dd905c47301c633c61234c4db9c36b7/lib/dns/openssleddsa_link.c#L89.
 // Note that this only works for certain ciphers: https://docs.openssl.org/3.6/man3/EVP_PKEY_new/#description
-func GetRawPrivateKey(key PublicKey) ([]byte, error) {
+func GetRawPrivateKey(key PrivateKey) ([]byte, error) {
 	if key == nil {
 		return nil, errors.New("key should not be nil")
 	}

@@ -161,6 +161,9 @@ func DigestRequiresLegacyProvider(algorithm string) bool {
 // GetDigestByName returns the Digest with the name or nil and an error if the
 // digest was not found.
 func GetDigestByName(algorithm string, allowNonFIPS bool) (*Digest, error) {
+	if algorithm == "" {
+		return nil, errors.New("empty hash string")
+	}
 	isLegacyDigest := DigestRequiresLegacyProvider(algorithm)
 	if isLegacyDigest && !allowNonFIPS {
 		return nil, ErrLegacyDigest

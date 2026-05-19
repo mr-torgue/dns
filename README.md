@@ -16,9 +16,30 @@ Note:
 - liboqs and oqs-provider are required if you want to use experimental PQC algorithms.
 
 To do:
-- [ ] Add support for PQC signatures
+- [x] Add support for PQC signatures
 - [ ] Add support for PQC-TLS
-- [ ] Merge with, or move to, DNS version 
+- [ ] Merge with, or move to, DNS version 2
+
+# Supported Algorithms
+|            Algorithm         | DNSSEC Algorithm ID | Activated |
+| ---------------------------- | ------------------- | --------- |
+| FALCON512                    |         17          | Yes        |
+| P256_FALCON512 (Hybrid)      |         18          | Yes        |
+| RSA3072_FALCON512 (Hybrid)   |         19          | Yes        |
+| FALCON1024                   |         20          | Yes        |
+| P521_FALCON1024 (Hybrid)     |         21          | Yes        |
+| DILITHIUM2                   |         22          | No        |
+| P256_DILITHIUM2 (Hybrid)     |         23          | No        |
+| RSA3072_DILITHIUM2 (Hybrid)  |         24          | No        |
+| SPHINCS+-SHA-256-128s Simple |         25          | No        |
+| P256_SPHINCS+-SHA-256-128s Simple (Hybrid)    |         26          | No        |
+| RSA3072_SPHINCS+-SHA-256-128s Simple (Hybrid) |         27          | No        |
+| MAYO1                        |         28          | No        |
+| P256_MAYO1                   |         29          | No        |
+| SNOVA2454                    |         30          | No        |
+| P256_SNOVA2454               |         31          | No        |
+
+# Benchmarks
 
 # Alternative (more granular) approach to a DNS library
 
