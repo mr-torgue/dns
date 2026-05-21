@@ -70,7 +70,7 @@ func (r *DNSKEY) PrivateKeyString(p openssl.PrivateKey) string {
 			"Algorithm: " + algorithm + "\n" +
 			"PrivateKey: " + private + "\n"
 
-	case ED25519:
+	case ED25519, FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024:
 		raw, err := openssl.GetRawPrivateKey(p)
 		if err != nil {
 			return ""

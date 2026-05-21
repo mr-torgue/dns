@@ -191,6 +191,74 @@ PrivateKey: vg6oG9cg9A0spN/6YrtMvASSdZHIxazupgtCNCP0Mmg=
 	sig.Signature = "oLxEpiV2MPvjpIPwYXzwD6cWnDWMRFepC4LFRXkecqdgXYzP/vaGczQZ9958t9WmU9im2z4HugXAcyjk2zwZvQ=="
 	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
+
+	// test PQC: FALCON512
+	pubkey, err = ReadRR(strings.NewReader(`
+example.local. IN DNSKEY 256 3 17 CZoqCsqVQrZh2o7BKpVUI9IbuGPYx49mi3WwlIVxGRmKekmodBaFaWzF Lzcp0gDxmkmyxh6kel5tr80YwepN5hSQKfMmYjO95NmzaloctIZR8IUL iLgdUFSxrzVn1VABum0IXuyFVnaW2D4kfXLrj8+3ouKlEGwosqqaNyBM +w194Rv+AZJyWdlUN1tbipCTsRZlHhqdaygkohOZkcgoCQ4VRGT0i3iu OD5ugwfmjfJYFktkr9hyLNKTVAVe+mE1qfT+mOgJYLWa+8/VJ3SWwRsn t6WYvINvSlpcNQDwdaF9UJUqOvtVy7nx0kJAA8p9BVG7oxedFKVEEE4s woih5MfNKn83ROYC34rSQshFtFPg74NCxUi9wUxata1ieVMJmD31I0na ii7oZ9i40MFNYdhbrkQ+ne3rsI9kRnKOGfegmoAHuZtX59bZfbKOtvNK 75BONJS/2gVFMUwCoeDeCTgeCyopVXysjUoXhsFVVTglVdbsIwIEV/dk po+lXHQ9E4qWggWh5owOt4X2pt1RWpGQp/UsSGEE5mbX+q8RDT49Ax7O 7hNckXdhjLEOnHnZryB8Mi0vN6VjAlbNe1eqA/UBDiXKue9emB6/8+Ap zYDw44DWAd9fNkQ1lgNaaEIf1Z/kimqhhbFYHEYcrMMj65R5f2IEcxKe ZAiGHwVRHaNtZv3l6oiALsm9Y/GCiLM6C7Jh5zSFTaJhAgKfiPHPNt0C CFj+x9oIngcEdOqrV2IlZd2NCv7ayg/108IWXBdBdVORi8WLU0TWidmB Y1RYuXVRk9ybBK4jg1jFtdlvShjDQlkVKXB/Wc5swZk3qA5GcW6499dZ EUXaOVSC56xfzXojXazJRWSUV1IPBn8qAun+rZAYXBLYyiCLNUE5qRNE X2a0cLsfX1S0JavBzRv+k/rCqAsWSR1dqYORmLohtQ8zOOK8mWyn9LsX kpX6q5t2L5YLOSP1rmmkqPXOZ1fvMTKWypht5rKLMTDp4i51qKmF4cYe LqJ5NeU6TsNsvciaZIhzUnYEJwTMCBYNdJNTruQushvzWAC9fdWpw+zV +CD2WsZgDlBtSH8FXGUxGJJ2WQ6D0ynNPgjcL54z6JRxX0oduqp5d/Ga qlzKnsU37i9tjaJlYs6dnH5daUNdLUw2v6ckyZcFQc6niVU3JHgsgWqZ 5LVE5wNvowOY6VAavmvK
+`), "Kexample.local.+017+61149.key")
+	require.Nil(t, err, "err should be nil")
+
+	privStr = `Private-key-format: v1.3
+Algorithm: 17 (falconpadded512)
+PrivateKey: WRAQQwBOhvw/hOvgOQBuQwxADAeghQwguyRghAxQghRiffPhfvhQgfgwwugAQeAQxfw/e/wew9/fugTOwwfugvewBgtwARCwhBfyg/xO/vfw+AcwPwAgQeA/ffPhQBxhROw/uQAxQgxRPQw+xQgQgu+gQwQvv/edevAxPfRAA/vwvwwPwOxAuvwQwvAfgv+BPgAAhQPgwBewQfPiRfxexP/hO/vgAhQBOe/QQBwRPxPQfw/gBxAAP+PxR+PwgQBgPwChhQiO/vBAgAABOggBPfgRv/hQPw/hg/xAfhe/gAhxePwfxBhwfRgQuOwfuh/QvPvfhRgexP/hPQ+fRf+fvwvwvAARPPPuwwxAv/hCePQfgQAvwwP/wQ+/vOxgwQhAvhRuQgBAQ/PP+ve//Ou/SfBQwPPw/wAiPPxeghQyN/OQfg/QPfPg/xQf+gyAxPf/+QCQBfvgAg+TfwRgRwPRAfRwwvgggfwBfvvPfPwAfhBvdvgee/AAOwhAQggAPBRAwgvQPeQvvQ/iPeAOhgwwARAwBPuyA/9xAOAAhgPABvgPgPexORQQQPPBQfAQOOyeRBfw+uhewwRBPQRggRAwO+hOvwPhAu9gifxPxAvOxOeh+gO+xfwB/xf/fAhffgBQBPfOwhAvRAvv/vAewheSgf/PgSPNg+uwhRAQ9xuwvPAgPOQQw+e//vdxROPxfQRPwuu///Qwf/vvgfxgf9RQOwgO+xP/AQfhwgfewhvgwvxAgvvQvgSPgQ/QgwOgvw+/QuAgewQRwgPQwvBPfAPfOvQAR/hO/ARPfQgAgAQ/+uv+/+xQAg/hw/xg/fQwQBAAgxBf/feAwPe/w/CPfwAguhP/ux/hf+xBO/wfxvQ/fwggxgPfwg/gCA/gPgegxfgAvyPftRB/gQQggQvO/AA+hBQfwRQOACPwfQhQPQQAfPv/hvABgARu/e/gQQf/gPvhfRfAtSv/wgAxABQBQR/ABf/w+wwvuvxPfhAxf/Nxw/PAPwve/+iegfufg//QeO///e7p3OAN1BcMA/3r+drqJzbbC/rMI/T9+ycRDBf+EdPgGwcILgDkBucA8Bkc7gBN5woKD+zTEivz9/Tv7uDi9fUWD+oVBuAOEOwf3Br6EvUoFAAhACgzAQwA1gARB9EbBcvHGALLAuwE6wAC/vnd2uoD/ffW/R0a4v4L9/vp7+vd8P1DCRj+EB77DRM6ACoDAT7x+Q291B8XHOri9vPvJw3x3R0F4Q/uCt4K9f758wzfAyEdCd8C3/cY8iXqMiH0HvjlCxgEBv8SDe4G+9Ed9+z47Onm5MgQFPL5FP7v7/ACEtsOHtz69PjWGyXoAxj83w717vIWDARGCA4C2CIpuwz1/OIU6ga89AoX5PHq6vrv9PESCg0C+9DU+Cn/BPbcCw4VG8cFB+HqGQ8I7w0VEfkZ/+f+7fL0CBMEF/L66QYPDf4qFff1+fzcC/URJP0OCeoM+cUdDhPs7dnWKQsN9u/sFxiq7D76E/YjFsriBP/4/zDhKx0OuNPx6wb8GNf91PMrANsTARACA+gA7Ok+Ix/t+PTIFAQXIdr7Dgby/NzTGUMS6/4I5vsT9hHsHQcD4wb51xgH4ev63RUR1eDQGQ0uLggR+CnvQ+QqLQvwPwEMAhMNGv///xYfChX3Dw73Bwn1BwIC9Pbc7/Xb1/8Q1fXy5e3sCvopCAjh7OgVzvr+
+`
+	privkey, err = pubkey.(*DNSKEY).ReadPrivateKey(strings.NewReader(privStr),
+		"Kexample.local.+017+61149.private")
+	require.Nil(t, err, "err should be nil")
+
+	assert.Equal(t, "CZoqCsqVQrZh2o7BKpVUI9IbuGPYx49mi3WwlIVxGRmKekmodBaFaWzFLzcp0gDxmkmyxh6kel5tr80YwepN5hSQKfMmYjO95NmzaloctIZR8IULiLgdUFSxrzVn1VABum0IXuyFVnaW2D4kfXLrj8+3ouKlEGwosqqaNyBM+w194Rv+AZJyWdlUN1tbipCTsRZlHhqdaygkohOZkcgoCQ4VRGT0i3iuOD5ugwfmjfJYFktkr9hyLNKTVAVe+mE1qfT+mOgJYLWa+8/VJ3SWwRsnt6WYvINvSlpcNQDwdaF9UJUqOvtVy7nx0kJAA8p9BVG7oxedFKVEEE4swoih5MfNKn83ROYC34rSQshFtFPg74NCxUi9wUxata1ieVMJmD31I0naii7oZ9i40MFNYdhbrkQ+ne3rsI9kRnKOGfegmoAHuZtX59bZfbKOtvNK75BONJS/2gVFMUwCoeDeCTgeCyopVXysjUoXhsFVVTglVdbsIwIEV/dkpo+lXHQ9E4qWggWh5owOt4X2pt1RWpGQp/UsSGEE5mbX+q8RDT49Ax7O7hNckXdhjLEOnHnZryB8Mi0vN6VjAlbNe1eqA/UBDiXKue9emB6/8+ApzYDw44DWAd9fNkQ1lgNaaEIf1Z/kimqhhbFYHEYcrMMj65R5f2IEcxKeZAiGHwVRHaNtZv3l6oiALsm9Y/GCiLM6C7Jh5zSFTaJhAgKfiPHPNt0CCFj+x9oIngcEdOqrV2IlZd2NCv7ayg/108IWXBdBdVORi8WLU0TWidmBY1RYuXVRk9ybBK4jg1jFtdlvShjDQlkVKXB/Wc5swZk3qA5GcW6499dZEUXaOVSC56xfzXojXazJRWSUV1IPBn8qAun+rZAYXBLYyiCLNUE5qRNEX2a0cLsfX1S0JavBzRv+k/rCqAsWSR1dqYORmLohtQ8zOOK8mWyn9LsXkpX6q5t2L5YLOSP1rmmkqPXOZ1fvMTKWypht5rKLMTDp4i51qKmF4cYeLqJ5NeU6TsNsvciaZIhzUnYEJwTMCBYNdJNTruQushvzWAC9fdWpw+zV+CD2WsZgDlBtSH8FXGUxGJJ2WQ6D0ynNPgjcL54z6JRxX0oduqp5d/GaqlzKnsU37i9tjaJlYs6dnH5daUNdLUw2v6ckyZcFQc6niVU3JHgsgWqZ5LVE5wNvowOY6VAavmvK", pubkey.(*DNSKEY).PublicKey, "public keys should be equal")
+	assert.Equal(t, privStr, pubkey.(*DNSKEY).PrivateKeyString(privkey), "private keys should be equal")
+
+	cname = new(CNAME)
+	cname.Hdr = RR_Header{"www.example.local.", TypeCNAME, ClassINET, 86400, 0}
+	cname.Target = "example.local."
+
+	sig = new(RRSIG)
+	sig.Hdr = RR_Header{"example.local.", TypeCNAME, ClassINET, 86400, 0}
+	sig.TypeCovered = TypeCNAME
+	sig.Expiration = 1779235200            // date -u '+%s' -d"2026-05-20 00:00:00"
+	sig.Inception = 1778803200             // date -u '+%s' -d"2026-05-15 00:00:00"
+	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
+	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
+	sig.Algorithm = FALCON512
+	err = sig.Sign(privkey, []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+
+	// test PQC: P256_FALCON512
+	pubkey, err = ReadRR(strings.NewReader(`
+example.local. IN DNSKEY 256 3 18 AAAAQQQIIWQCq2t8Mnx2gKvlHbK+V60rzTW+2p35YDnelO6R4VrelYkq HBRpaAqdOroXPY95tITzNuGPEOV9wBVo1t/sCaoirOf8qSBA/ch6cuDO VyytZa1ZYAAFXSiJZNsRsLlXT1jWbapUltTo4EoEFLQ2oK8/jSJ3g8MF LqJRdbarf49IbPSvRLWrzWTZ4xn1QyG2JwvLaaSQ59jhG1WTCbUa8Av1 QnHIAi8bqrdsvkrHDDl4RqhFZcTkLDEt8kBSTj/4YSnsy9O4zUOQww18 owXi2UJofkXN2BnVTs9SFMTEPFs4OP1+gTegEkEA3llBblELjA83LCoV jlxa6L+M9I1JMofnxEKcmgGjqiGHYjGRtp2ESGRZ+zABCvm6TfIWOWY+ khrwQUuaKpSeuKMKzIdUWbeEP+r1B8gFeMhuUSbgKyHVTLyEfHawQC0U ED0Gu4dkXz+UrmNaHsIBtbbH2RVetDCnQYpURzeiNzsAy8xQ3IBRud5D EqjgaZKFcSSo4fGeZ4gW/iTZGJ+HQvyUg2jq2WboIAJtlygTya14yFyO E01l+R6ga7uZ17G1bV9+Op64N2cUFFLX8wQCp6nItaRyav6WXigIj2DD a77eVC+AyaAQPHGo7wwvqJKEm8fTTY2U20rj/KcVRYW00ku+HOfppt9T TvqO08SuF3cEMtpq3PaAub6XbU36OzYglHmjuqx6ttBAiiAzVPQxsS9J IB60VF/s7pcx24feZS0btl/pviJFKuHy4dxJzmDds+bvksQ7QQCAL8PA LFXSSKOU6IPd+vOdZIivdFKXl6kpkMoZA+jhIh/RBSlFLEuZVLSCDdCX HsEiKnuIw5oY4UJxXRl/sovQAICyQoDgxSNT3ZlQoRDHoYIv2Emq7M5j er6exFBAEbrtJcBk7mFK7Qnbh1d4FVmtpqQR0Ark5zJeiLMEdU/jdsk2 OincZfyfEolZA3QQbeRgnAzH2p4pGfBecF0MoGJMspN50PeLbiP0Gi80 g3i1oT0XUCfVzHH0Jd9BGVYF1VgzRC2E2Hdhlp706XuYkGeOWt/lrGMe qyy2d9LP8TCWVxGPxCqBYoI6qC8etBK9QWitYIc4YQPcXsNKDvF5w2bw IWw0qx4b11QOBSrsxwwghGwXd2Mtd1ZNUr0DjkdMp9mdgkMaqIJgkM7t B/IoamKpcgL1ojtuq/GKSslg/JmjoHLIIPsIjSbFkAU/bEgGLKWhzK6k b1Cf5ZvMe3aw+dFx7YsMzHQnWKlqIxYQJ+7myYf41JoMhMESSJUFiJR3
+`), "Kexample.local.+018+36951.key")
+	require.Nil(t, err, "err should be nil")
+
+	privStr = `Private-key-format: v1.3
+Algorithm: 18 (p256_falconpadded512)
+PrivateKey: AAAAeTB3AgEBBCDz6MwxQtej7sKBdQZD5wFyWf7YZZi91Lpk/JAkVL8Qq6AKBggqhkjOPQMBB6FEA0IABAghZAKra3wyfHaAq+Udsr5XrSvNNb7anflgOd6U7pHhWt6ViSocFGloCp06uhc9j3m0hPM24Y8Q5X3AFWjW3+xZCF9D++A/G/KCK+99D8697/B99FAI6/D/D/HE99E+9E8GEBA/94B97+9/DD9CHICE8CDCD++CG/CAJFB/BEE678/FFHFDH+97B7DFED8+DCF888A8B+BGBCFC8BAAAD96B7GDD/5EA//8BAE9+D+8A8BA++C9+AC7HG7F+ECA/A/+A5BC+EBB//8EBAAD/E29+98K97G+/+A+ABCHA8/AB89+B+7/AAB6+AE+G8+9DCA9C4C5A+C/BDB/9+BHA2++HCCACEAAB98C7D5FBEBF+CB+CAB5BB9D/BBCDC899AEF96C+BHB+3B9B83AJ915+BCD+16CCF+69C//7E4++675B68AF7AJEA9//B5FB9+9C96EB8DBA9I+797GA/D4NB8BA8+DCC9DHAF17ACACD15A6/B+9A+5//71D8+55GA9/CJ3E7/E88EBE7C937GA/FGD9/CDDB8999CGE6GF0E8AC+BA+8y8IB+D+B+CAA/+88GA7DDG/+87B+FHGACDJ+AC5+IJ69//9BB99/IBBB68BB8G94E9AGAA9A9E9CBDEACHGE6C+A++B8CA/B9FC/EC67C996/BA+68/B7FFA9EEE6C799FBFEF/GEF5/K+D8A+IC8/D45DGC8/F+D7CB88C9CGG8zJ939CBDBEF8DABA6A+8BCB4IA6F69GB/+D95+89+B/FB9CA99B/79/6E+8C6AECAACBHF8D/B8E+CA68CDAAA6FFAB+/8C/419EGA4D/BCD/F++9++HBGCCEA+AG85EF8/A+++D9/7CC8C+/6GC+CED6FB8CBA/G8/+A8BBB8G/CD9DAC9AB9CHGDA87+G+C++E6BECG8H86CB7D9B+BB9CA6+//GB+EBDDC+9B+7+ECEB/AEHK8+8KBA5A+C78+8AB85+A/+9B99+ECEA79/C8AB09+86C+FC+AG7LIG89G87A88CCDB997A9C+/B7A+A2F9DC8EA+DG5CHD+/5B9F+7+E97+JFBG9B9C/++E9+BFJEF85A78R4bCvgjMwIZ+v4HEvYRB+0MEufx6h4IAv4EB/D9ARz6BPfH2tEnCwkNAwb9BhMBLdYKCf/1xf8cKwv18AwHFP73DfT6CAP7KP8d9OZAFiIP5RckGCAL9QDg1vIpIwESAhnrGfsGSyQHy/IXFyb61vwM8x/69/Uw5yEZ5uUfHB7i7g3xEPUG8AUACCQC+iIB8uc9+iQb6hnzHQPz8e8RGN39C/8nAzED1wX+Kib21A0mKek17CX69xULFeHuACEbFy7UAv4TIeYG4AQR1MYA9Rnt/gvZKw/7+PTvDv32Aen+6O30C/IM+hPk/SvwLfLVER0ODBYO+vQQ4ff9MwX8Pe8l9vMWEuD49uZPJiM/Ff0DIhII+wEk2QL1MNvt5w4q8PDa8Rv7E9H7/wMb9Q7X5wYQ/g0IKgJEAwbs+Agd/eHV/Pz7+OkKCOH04CQPEuH7+xjhue4e/w/tzvHsBhXxGCDsIuve8PnN+unpDP4iBiIl7vYI5Bv3wgcV/NsP6RH7y+kKCk3k5eH/GtIC7Q3Y1P3r1/MlCfzLExXt+AQCGg8FHhjGGijiDOn4+f4X0gIX+eoG/c0exhP++A/X/Qz4IO0A8yQEBdrD+QrkxvAJ9/bnIvcNEOjg9gMEC+DqHQXa9uYA/Erp7gocCOID5PEM8w8j3OYO6lLeGxHwC/Hfxv4=
+`
+	privkey, err = pubkey.(*DNSKEY).ReadPrivateKey(strings.NewReader(privStr),
+		"Kexample.local.+018+36951.private")
+	require.Nil(t, err, "err should be nil")
+
+	assert.Equal(t, "AAAAQQQIIWQCq2t8Mnx2gKvlHbK+V60rzTW+2p35YDnelO6R4VrelYkqHBRpaAqdOroXPY95tITzNuGPEOV9wBVo1t/sCaoirOf8qSBA/ch6cuDOVyytZa1ZYAAFXSiJZNsRsLlXT1jWbapUltTo4EoEFLQ2oK8/jSJ3g8MFLqJRdbarf49IbPSvRLWrzWTZ4xn1QyG2JwvLaaSQ59jhG1WTCbUa8Av1QnHIAi8bqrdsvkrHDDl4RqhFZcTkLDEt8kBSTj/4YSnsy9O4zUOQww18owXi2UJofkXN2BnVTs9SFMTEPFs4OP1+gTegEkEA3llBblELjA83LCoVjlxa6L+M9I1JMofnxEKcmgGjqiGHYjGRtp2ESGRZ+zABCvm6TfIWOWY+khrwQUuaKpSeuKMKzIdUWbeEP+r1B8gFeMhuUSbgKyHVTLyEfHawQC0UED0Gu4dkXz+UrmNaHsIBtbbH2RVetDCnQYpURzeiNzsAy8xQ3IBRud5DEqjgaZKFcSSo4fGeZ4gW/iTZGJ+HQvyUg2jq2WboIAJtlygTya14yFyOE01l+R6ga7uZ17G1bV9+Op64N2cUFFLX8wQCp6nItaRyav6WXigIj2DDa77eVC+AyaAQPHGo7wwvqJKEm8fTTY2U20rj/KcVRYW00ku+HOfppt9TTvqO08SuF3cEMtpq3PaAub6XbU36OzYglHmjuqx6ttBAiiAzVPQxsS9JIB60VF/s7pcx24feZS0btl/pviJFKuHy4dxJzmDds+bvksQ7QQCAL8PALFXSSKOU6IPd+vOdZIivdFKXl6kpkMoZA+jhIh/RBSlFLEuZVLSCDdCXHsEiKnuIw5oY4UJxXRl/sovQAICyQoDgxSNT3ZlQoRDHoYIv2Emq7M5jer6exFBAEbrtJcBk7mFK7Qnbh1d4FVmtpqQR0Ark5zJeiLMEdU/jdsk2OincZfyfEolZA3QQbeRgnAzH2p4pGfBecF0MoGJMspN50PeLbiP0Gi80g3i1oT0XUCfVzHH0Jd9BGVYF1VgzRC2E2Hdhlp706XuYkGeOWt/lrGMeqyy2d9LP8TCWVxGPxCqBYoI6qC8etBK9QWitYIc4YQPcXsNKDvF5w2bwIWw0qx4b11QOBSrsxwwghGwXd2Mtd1ZNUr0DjkdMp9mdgkMaqIJgkM7tB/IoamKpcgL1ojtuq/GKSslg/JmjoHLIIPsIjSbFkAU/bEgGLKWhzK6kb1Cf5ZvMe3aw+dFx7YsMzHQnWKlqIxYQJ+7myYf41JoMhMESSJUFiJR3", pubkey.(*DNSKEY).PublicKey, "public keys should be equal")
+	assert.Equal(t, privStr, pubkey.(*DNSKEY).PrivateKeyString(privkey), "private keys should be equal")
+
+	cname = new(CNAME)
+	cname.Hdr = RR_Header{"www.example.local.", TypeCNAME, ClassINET, 86400, 0}
+	cname.Target = "example.local."
+
+	sig = new(RRSIG)
+	sig.Hdr = RR_Header{"example.local.", TypeCNAME, ClassINET, 86400, 0}
+	sig.TypeCovered = TypeCNAME
+	sig.Expiration = 1779235200            // date -u '+%s' -d"2026-05-20 00:00:00"
+	sig.Inception = 1778803200             // date -u '+%s' -d"2026-05-15 00:00:00"
+	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
+	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
+	sig.Algorithm = P256_FALCON512
+	err = sig.Sign(privkey, []RR{cname})
+	assert.Nil(t, err, "err should be nil")
+	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
+	assert.Nil(t, err, "err should be nil")
 }
 
 func TestSignVerify(t *testing.T) {
@@ -602,6 +670,32 @@ func TestKeyToDS(t *testing.T) {
 	ds = key.ToDS(SHA384)
 	require.NotNil(t, ds, "ds should not be nil")
 	assert.Equal(t, "A3FE95E1354CDF71D4701027F759B2BC36F4BE0B09D1375AAD939E0BE6328DA3813E37DD0F3F560C980B213F8416475C", strings.ToUpper(ds.Digest), "SHA384 hashes should match")
+
+	/*
+		key = new(DNSKEY)
+		key.Hdr.Name = "example.com."
+		key.Hdr.Rrtype = TypeDNSKEY
+		key.Hdr.Class = ClassINET
+		key.Hdr.Ttl = 3600
+		key.Flags = 256
+		key.Protocol = 3
+		key.Algorithm = P521_FALCON1024
+		key.PublicKey = "Ule+j1b34r+28QMRLdfuXNKdZBbU/yTB27jomZZBrLlmsRDivwkr0GAv/WurTWuQczcH1Wu3cLiILaJu5sg4LjcS8IAPJMu+uQunMKR7ecOWBZJ/0mcDEPSg79CckwKP"
+		ds = key.ToDS(SHA1)
+		require.NotNil(t, ds, "ds should not be nil")
+		assert.NotEqual(t, "6E3EC3AEED5FAC6A392E8A704BB18BAE25CAAA64", strings.ToUpper(ds.Digest), "SHA1 hashes should not match")
+		key.Flags = 257
+		key.Algorithm = ECDSAP384SHA384
+		ds = key.ToDS(SHA1)
+		require.NotNil(t, ds, "ds should not be nil")
+		assert.Equal(t, "6E3EC3AEED5FAC6A392E8A704BB18BAE25CAAA64", strings.ToUpper(ds.Digest), "SHA1 hashes should match")
+		ds = key.ToDS(SHA256)
+		require.NotNil(t, ds, "ds should not be nil")
+		assert.Equal(t, "A0AA822FCF822F64BEAAB7F9F15DAA86EC80CF4C1CF38A9D6158D2D7CCD74D48", strings.ToUpper(ds.Digest), "SHA256 hashes should match")
+		ds = key.ToDS(SHA384)
+		require.NotNil(t, ds, "ds should not be nil")
+		assert.Equal(t, "A3FE95E1354CDF71D4701027F759B2BC36F4BE0B09D1375AAD939E0BE6328DA3813E37DD0F3F560C980B213F8416475C", strings.ToUpper(ds.Digest), "SHA384 hashes should match")
+	*/
 }
 
 func TestSignRSA(t *testing.T) {
