@@ -1,4 +1,4 @@
-module github.com/miekg/dns
+module github.com/mr-torgue/dns-pq-openssl
 
 go 1.25.0
 
