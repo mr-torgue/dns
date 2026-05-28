@@ -1,4 +1,4 @@
-module github.com/mr-torgue/dns-pq-openssl
+module github.com/mr-torgue/dns
 
 go 1.25.0
 
