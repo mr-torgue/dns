@@ -41,13 +41,13 @@ func GetParamsRSAPrivate(key PrivateKey) (*big.Int, *big.Int, *big.Int, *big.Int
 	defer C.free(unsafe.Pointer(paramNameQ))
 
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameD, &D) != 1 {
-		return nil, nil, nil, nil, nil, errors.New("failed to get RSA private exponent")
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to get RSA private exponent: %w", errorFromErrorQueue())
 	}
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameP, &P) != 1 {
-		return nil, nil, nil, nil, nil, errors.New("failed to get RSA prime 1")
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to get RSA prime 1: %w", errorFromErrorQueue())
 	}
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameQ, &Q) != 1 {
-		return nil, nil, nil, nil, nil, errors.New("failed to get RSA prime 2")
+		return nil, nil, nil, nil, nil, fmt.Errorf("failed to get RSA prime 2: %w", errorFromErrorQueue())
 	}
 
 	// convert to bigint
@@ -92,10 +92,10 @@ func GetParamsRSA(key PublicKey) (*big.Int, *big.Int, error) {
 	defer C.free(unsafe.Pointer(paramNameN))
 
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameE, &e) != 1 {
-		return nil, nil, errors.New("failed to get RSA public exponent")
+		return nil, nil, fmt.Errorf("failed to get RSA public exponent: %w", errorFromErrorQueue())
 	}
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameN, &N) != 1 {
-		return nil, nil, errors.New("failed to get RSA modulus")
+		return nil, nil, fmt.Errorf("failed to get RSA modulus: %w", errorFromErrorQueue())
 	}
 
 	// convert to bigint
@@ -112,19 +112,6 @@ func GetParamsRSA(key PublicKey) (*big.Int, *big.Int, error) {
 	if NInt == nil {
 		return nil, nil, errors.New("failed to convert N to big.Int")
 	}
-
-	// REMOVED: used hex before
-	//eHex := C.GoString(C.BN_bn2hex(e))
-	//eInt, ok := new(big.Int).SetString(eHex, 16)
-	//if !ok {
-	//	return nil, nil, errors.New("failed to convert e to big.Int")
-	//}
-
-	//NHex := C.GoString(C.BN_bn2hex(N))
-	//NInt, ok := new(big.Int).SetString(NHex, 16)
-	//if !ok {
-	//	return nil, nil, errors.New("failed to convert N to big.Int")
-	//}
 
 	return eInt, NInt, nil
 }
@@ -171,7 +158,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		eBN := C.BN_bin2bn((*C.uchar)(&eBytes[0]), C.int(len(eBytes)), nil)
 		defer C.BN_free(eBN)
 		if C.OSSL_PARAM_BLD_push_BN(bld, paramNameE, eBN) != 1 {
-			return nil, errors.New("failed to set RSA public exponent")
+			return nil, fmt.Errorf("failed to set RSA public exponent: %w", errorFromErrorQueue())
 		}
 	}
 	if N != nil {
@@ -179,7 +166,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		nBN := C.BN_bin2bn((*C.uchar)(&nBytes[0]), C.int(len(nBytes)), nil)
 		defer C.BN_free(nBN)
 		if C.OSSL_PARAM_BLD_push_BN(bld, paramNameN, nBN) != 1 {
-			return nil, errors.New("failed to set RSA modulus")
+			return nil, fmt.Errorf("failed to set RSA modulus: %w", errorFromErrorQueue())
 		}
 	}
 	if D != nil {
@@ -187,7 +174,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		dBN := C.BN_bin2bn((*C.uchar)(&dBytes[0]), C.int(len(dBytes)), nil)
 		defer C.BN_free(dBN)
 		if C.OSSL_PARAM_BLD_push_BN(bld, paramNameD, dBN) != 1 {
-			return nil, errors.New("failed to set RSA private exponent")
+			return nil, fmt.Errorf("failed to set RSA private exponent: %w", errorFromErrorQueue())
 		}
 	}
 	if P != nil {
@@ -195,7 +182,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		pBN := C.BN_bin2bn((*C.uchar)(&pBytes[0]), C.int(len(pBytes)), nil)
 		defer C.BN_free(pBN)
 		if C.OSSL_PARAM_BLD_push_BN(bld, paramNameP, pBN) != 1 {
-			return nil, errors.New("failed to set RSA prime 1")
+			return nil, fmt.Errorf("failed to set RSA prime 1: %w", errorFromErrorQueue())
 		}
 	}
 	if Q != nil {
@@ -203,7 +190,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		qBN := C.BN_bin2bn((*C.uchar)(&qBytes[0]), C.int(len(qBytes)), nil)
 		defer C.BN_free(qBN)
 		if C.OSSL_PARAM_BLD_push_BN(bld, paramNameQ, qBN) != 1 {
-			return nil, errors.New("failed to set RSA prime 2")
+			return nil, fmt.Errorf("failed to set RSA prime 2: %w", errorFromErrorQueue())
 		}
 	}
 
@@ -217,13 +204,13 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 	defer C.free(unsafe.Pointer(RSAName))
 	ctx := C.EVP_PKEY_CTX_new_from_name(nil, RSAName, nil)
 	if ctx == nil {
-		return nil, errors.New("failed to create key context")
+		return nil, fmt.Errorf("failed to create key context: %w", errorFromErrorQueue())
 	}
 	defer C.EVP_PKEY_CTX_free(ctx)
 
 	// create the key and return
 	if C.EVP_PKEY_fromdata_init(ctx) != 1 {
-		return nil, errors.New("failed to initialize key from data")
+		return nil, fmt.Errorf("failed to initialize key from data: %w", errorFromErrorQueue())
 	}
 	var status int
 	// check if private or not
@@ -233,7 +220,7 @@ func buildRSAKey(private bool, E *big.Int, N *big.Int, D *big.Int, P *big.Int, Q
 		status = int(C.EVP_PKEY_fromdata(ctx, &pkey, C.EVP_PKEY_PUBLIC_KEY, params))
 	}
 	if status != 1 {
-		return nil, errors.New("failed to create key from data")
+		return nil, fmt.Errorf("failed to create key from data: %w", errorFromErrorQueue())
 	}
 	return pKeyFromKey(pkey), nil
 }
@@ -252,7 +239,7 @@ func GetECDSAPrivateKey(key PrivateKey) (*big.Int, error) {
 	defer C.BN_free(priv)
 
 	if C.EVP_PKEY_get_bn_param(pkey, paramName, &priv) != 1 {
-		return nil, errors.New("failed to get private key parameter")
+		return nil, fmt.Errorf("failed to get private key parameter: %w", errorFromErrorQueue())
 	}
 
 	buf := make([]byte, (C.BN_num_bits(priv)+7)/8) // round up
@@ -280,11 +267,11 @@ func GetECDSAPublicKey(key PublicKey) (*big.Int, *big.Int, error) {
 	defer C.free(unsafe.Pointer(paramNameY))
 
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameX, &X) != 1 {
-		return nil, nil, errors.New("failed to get ECDSA X")
+		return nil, nil, fmt.Errorf("failed to get ECDSA X: %w", errorFromErrorQueue())
 
 	}
 	if C.EVP_PKEY_get_bn_param(key.evpPKey(), paramNameY, &Y) != 1 {
-		return nil, nil, errors.New("failed to get ECDSA Y")
+		return nil, nil, fmt.Errorf("failed to get ECDSA Y: %w", errorFromErrorQueue())
 	}
 
 	// conver to bigint
@@ -346,7 +333,7 @@ func buildECDSAKey(private bool, key []byte, groupname string) (PrivateKey, erro
 	var pkey *C.EVP_PKEY
 	var bld *C.OSSL_PARAM_BLD = C.OSSL_PARAM_BLD_new()
 	if bld == nil {
-		return nil, errors.New("failed to create parameter builder")
+		return nil, fmt.Errorf("failed to create parameter builder: %w", errorFromErrorQueue())
 	}
 	defer C.OSSL_PARAM_BLD_free(bld)
 	paramGroupName := C.CString(C.OSSL_PKEY_PARAM_GROUP_NAME)
@@ -358,47 +345,47 @@ func buildECDSAKey(private bool, key []byte, groupname string) (PrivateKey, erro
 
 	// set the groupname: "prime256v1", "secp384r1", "secp521r1"
 	if C.OSSL_PARAM_BLD_push_utf8_string(bld, paramGroupName, groupnameCString, 10) != 1 {
-		return nil, errors.New(fmt.Sprintf("failed to set groupname: %s", C.GoString(groupnameCString)))
+		return nil, fmt.Errorf("failed to set groupname: %s (%w)", C.GoString(groupnameCString), errorFromErrorQueue())
 	}
 	if private {
 		groupNid := C.OBJ_txt2nid(groupnameCString)
 		if groupNid == C.NID_undef {
-			return nil, errors.New("invalid curve name")
+			return nil, fmt.Errorf("invalid curve name: %w", errorFromErrorQueue())
 		}
 		group := C.EC_GROUP_new_by_curve_name(groupNid)
 		if group == nil {
-			return nil, errors.New("failed to create EC group")
+			return nil, fmt.Errorf("failed to create EC group: %w", errorFromErrorQueue())
 		}
 		defer C.EC_GROUP_free(group)
 
 		priv := C.BN_bin2bn((*C.uchar)(&key[0]), C.int(len(key)), nil)
 		if priv == nil {
-			return nil, errors.New("failed to convert private key to BN")
+			return nil, fmt.Errorf("failed to convert private key to BN: %w", errorFromErrorQueue())
 		}
 		defer C.BN_free(priv)
 
 		if C.OSSL_PARAM_BLD_push_BN(bld, C.CString(C.OSSL_PKEY_PARAM_PRIV_KEY), priv) != 1 {
-			return nil, errors.New("failed to set private key parameter")
+			return nil, fmt.Errorf("failed to set private key parameter: %w", errorFromErrorQueue())
 		}
 
 		pubkey := C.EC_POINT_new(group)
 		if pubkey == nil {
-			return nil, errors.New("failed to create EC point")
+			return nil, fmt.Errorf("failed to create EC point: %w", errorFromErrorQueue())
 		}
 		defer C.EC_POINT_free(pubkey)
 
 		if C.EC_POINT_mul(group, pubkey, priv, nil, nil, nil) != 1 {
-			return nil, errors.New("failed to generate public key")
+			return nil, fmt.Errorf("failed to generate public key: %w", errorFromErrorQueue())
 		}
 
 		buf := make([]byte, C.EC_POINT_point2oct(group, pubkey, C.POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil))
 		if len(buf) == 0 {
-			return nil, errors.New("failed to convert public key to octet string")
+			return nil, fmt.Errorf("failed to convert public key to octet string: %w", errorFromErrorQueue())
 		}
 
 		keyLen := C.EC_POINT_point2oct(group, pubkey, C.POINT_CONVERSION_UNCOMPRESSED, (*C.uchar)(&buf[0]), C.size_t(len(buf)), nil)
 		if keyLen == 0 {
-			return nil, errors.New("failed to convert public key to octet string")
+			return nil, fmt.Errorf("failed to convert public key to octet string: %w", errorFromErrorQueue())
 		}
 	} else {
 		// Add POINT_CONVERSION_UNCOMPRESSED prefix (0x04)
@@ -407,27 +394,27 @@ func buildECDSAKey(private bool, key []byte, groupname string) (PrivateKey, erro
 		copy(newKey[1:], key)
 		// set public key
 		if C.OSSL_PARAM_BLD_push_octet_string(bld, paramNameKey, unsafe.Pointer(&newKey[0]), C.size_t(len(newKey))) != 1 {
-			return nil, errors.New("failed to set public key parameter")
+			return nil, fmt.Errorf("failed to set public key parameter: %w", errorFromErrorQueue())
 		}
 	}
 
 	// build the ctx
 	params := C.OSSL_PARAM_BLD_to_param(bld)
 	if params == nil {
-		return nil, errors.New("failed to build parameters")
+		return nil, fmt.Errorf("failed to build parameters: %w", errorFromErrorQueue())
 	}
 	defer C.OSSL_PARAM_free(params)
 	ECName := C.CString("EC")
 	defer C.free(unsafe.Pointer(ECName))
 	ctx := C.EVP_PKEY_CTX_new_from_name(nil, ECName, nil)
 	if ctx == nil {
-		return nil, errors.New("failed to create key context")
+		return nil, fmt.Errorf("failed to create key context: %w", errorFromErrorQueue())
 	}
 	defer C.EVP_PKEY_CTX_free(ctx)
 
 	// create the key and return
 	if C.EVP_PKEY_fromdata_init(ctx) != 1 {
-		return nil, errors.New("failed to initialize key from data")
+		return nil, fmt.Errorf("failed to initialize key from data: %w", errorFromErrorQueue())
 	}
 	var status int
 	// check if private or not
@@ -437,7 +424,7 @@ func buildECDSAKey(private bool, key []byte, groupname string) (PrivateKey, erro
 		status = int(C.EVP_PKEY_fromdata(ctx, &pkey, C.EVP_PKEY_PUBLIC_KEY, params))
 	}
 	if status != 1 {
-		return nil, errors.New("failed to create key from data")
+		return nil, fmt.Errorf("failed to create key from data: %w", errorFromErrorQueue())
 	}
 
 	return pKeyFromKey(pkey), nil
@@ -457,7 +444,7 @@ func GetRawPrivateKey(key PrivateKey) ([]byte, error) {
 
 	// get the required length for the raw key
 	if C.EVP_PKEY_get_raw_private_key(key.evpPKey(), nil, &len) != 1 {
-		return nil, errors.New("failed to get raw key length")
+		return nil, fmt.Errorf("failed to get raw key length: %w", errorFromErrorQueue())
 	}
 
 	// allocate a buffer of the correct size
@@ -466,7 +453,7 @@ func GetRawPrivateKey(key PrivateKey) ([]byte, error) {
 
 	// fill the buffer with the raw key
 	if C.EVP_PKEY_get_raw_private_key(key.evpPKey(), (*C.uchar)(buf), &len) != 1 {
-		return nil, errors.New("failed to get raw key")
+		return nil, fmt.Errorf("failed to get raw key: %w", errorFromErrorQueue())
 	}
 
 	// Convert the C buffer to a Go byte slice
@@ -489,7 +476,7 @@ func GetRawPublicKey(key PublicKey) ([]byte, error) {
 
 	// get the required length for the raw key
 	if C.EVP_PKEY_get_raw_public_key(key.evpPKey(), nil, &len) != 1 {
-		return nil, errors.New("failed to get raw key length")
+		return nil, fmt.Errorf("failed to get raw key length: %w", errorFromErrorQueue())
 	}
 
 	// allocate a buffer of the correct size
@@ -498,7 +485,7 @@ func GetRawPublicKey(key PublicKey) ([]byte, error) {
 
 	// fill the buffer with the raw key
 	if C.EVP_PKEY_get_raw_public_key(key.evpPKey(), (*C.uchar)(buf), &len) != 1 {
-		return nil, errors.New("failed to get raw key")
+		return nil, fmt.Errorf("failed to get raw key: %w", errorFromErrorQueue())
 	}
 
 	// Convert the C buffer to a Go byte slice
@@ -523,7 +510,7 @@ func BuildRawPrivateKey(bytes []byte, algName string) (PrivateKey, error) {
 	defer C.free(unsafe.Pointer(algNameC))
 	pkey = C.EVP_PKEY_new_raw_private_key_ex(nil, algNameC, nil, (*C.uchar)(&bytes[0]), C.size_t(len(bytes)))
 	if pkey == nil {
-		return nil, fmt.Errorf("failed to create key from raw private key for algorithm %s", algName)
+		return nil, fmt.Errorf("failed to create key from raw private key for algorithm %s (%w)", algName, errorFromErrorQueue())
 	}
 
 	return pKeyFromKey(pkey), nil
@@ -542,7 +529,7 @@ func BuildRawPublicKey(bytes []byte, algName string) (PublicKey, error) {
 	defer C.free(unsafe.Pointer(algNameC))
 	pkey = C.EVP_PKEY_new_raw_public_key_ex(nil, algNameC, nil, (*C.uchar)(&bytes[0]), C.size_t(len(bytes)))
 	if pkey == nil {
-		return nil, fmt.Errorf("failed to create key from raw public key for algorithm %s", algName)
+		return nil, fmt.Errorf("failed to create key from raw public key for algorithm %s (%w)", algName, errorFromErrorQueue())
 	}
 
 	return pKeyFromKey(pkey), nil

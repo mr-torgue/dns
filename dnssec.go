@@ -83,11 +83,11 @@ var AlgorithmToHash = map[uint8]string{
 	ECDSAP256SHA256:   "sha256",
 	ECDSAP384SHA384:   "sha384",
 	RSASHA512:         "sha512",
-	FALCON512:         "sha256",
-	P256_FALCON512:    "sha256",
-	RSA3072_FALCON512: "sha256",
-	FALCON1024:        "sha256",
-	P521_FALCON1024:   "sha256",
+	FALCON512:         "",
+	P256_FALCON512:    "",
+	RSA3072_FALCON512: "",
+	FALCON1024:        "",
+	P521_FALCON1024:   "",
 	ED25519:           "",
 }
 

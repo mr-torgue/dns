@@ -145,16 +145,18 @@ func (key *pKey) BaseType() NID {
 	return NID(C.EVP_PKEY_get_base_id(key.key))
 }
 
+// getAlgorithmInfo returns if it uses a digest function.
+//func (key *pKey) getAlgorithmInfo() (bool, int) {
+//
+//}
+
 func (key *pKey) SignPKCS1v15(digest *Digest, data []byte) ([]byte, error) {
 
 	ctx := C.EVP_MD_CTX_new()
 	defer C.EVP_MD_CTX_free(ctx)
 
-	if key.KeyType() == KeyTypeED25519 {
+	if digest == nil {
 		// do ED specific one-shot sign
-		if digest != nil {
-			return nil, errors.New("signpkcs1v15: digest must be null")
-		}
 		if len(data) == 0 {
 			return nil, errors.New("signpkcs1v15: 0-length data or non-null digest")
 		}
@@ -164,8 +166,8 @@ func (key *pKey) SignPKCS1v15(digest *Digest, data []byte) ([]byte, error) {
 		}
 
 		// evp signatures are 64 bytes
-		sig := make([]byte, 64)
-		var siglen C.size_t = 64
+		var siglen C.size_t = C.size_t(C.EVP_PKEY_get_size(key.key))
+		sig := make([]byte, C.EVP_PKEY_get_size(key.key))
 		if C.EVP_DigestSign(ctx,
 			(*C.uchar)(unsafe.Pointer(&sig[0])),
 			&siglen,
@@ -198,11 +200,11 @@ func (key *pKey) VerifyPKCS1v15(digest *Digest, data, sig []byte) error {
 		return errors.New("verifypkcs1v15: 0-length sig")
 	}
 
-	if key.KeyType() == KeyTypeED25519 {
+	if digest == nil {
 		// do ED specific one-shot sign
 
-		if digest != nil || len(data) == 0 {
-			return errors.New("verifypkcs1v15: 0-length data or non-null digest")
+		if len(data) == 0 {
+			return errors.New("verifypkcs1v15: 0-length data")
 		}
 
 		if C.EVP_DigestVerifyInit(ctx, nil, nil, nil, key.key) != 1 {
