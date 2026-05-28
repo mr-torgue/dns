@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pexip/go-openssl/utils"
+	"github.com/mr-torgue/dns/pkg/go-openssl/utils"
 )
 
 var (

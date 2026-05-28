@@ -16,7 +16,7 @@ func TestIntToBigNum(t *testing.T) {
 			}
 			j := bn.GetValue()
 			if i != j {
-				t.Fatalf(fmt.Sprintf("%d != %d", i, j))
+				t.Fatalf("%d != %d", i, j)
 			}
 		})
 	}

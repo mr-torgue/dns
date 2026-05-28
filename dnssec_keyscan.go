@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pexip/go-openssl"
+	"github.com/mr-torgue/dns/pkg/go-openssl"
 )
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.

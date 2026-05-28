@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/pexip/go-openssl"
+	"github.com/mr-torgue/dns/pkg/go-openssl"
 )
 
 const format = "Private-key-format: v1.3\n"

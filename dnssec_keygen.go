@@ -4,7 +4,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/pexip/go-openssl"
+	"github.com/mr-torgue/dns/pkg/go-openssl"
 )
 
 // Generate generates a DNSKEY of the given bit size.
