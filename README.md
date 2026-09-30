@@ -7,8 +7,8 @@ Fork of the [DNS library](https://github.com/miekg/dns) by miekg, that adds supp
 
 Dependencies:
 - OpenSSL 3.6.2
-- liboqs 0.15.0 (optional)
-- oqs-provider 0.11.0 (optional)
+- liboqs 0.15.0 (required for PQC)
+- oqs-provider 0.11.0 (required for PQC)
   
 Dependencies can be installed with the provided script.
 Note: 
@@ -22,23 +22,27 @@ To do:
 
 # Supported Algorithms
 
-|            Algorithm         | DNSSEC Algorithm ID | Hybrid | Implemented |
-| ---------------------------- | ------------------- | ------ | ----------- |
-| falconpadded512              |         17          | No     | Yes         |
-| p256_falconpadded512         |         18          | Yes    | Yes         |
-| rsa3072_falconpadded512      |         19          | Yes    | Yes         |
-| falconpadded1024             |         20          | No     | Yes         |
-| p521_falconpadded1024        |         21          | Yes    | Yes         |
-| mldsa44                      |         22          | No     | Yes         |
-| p256_mldsa44                 |         23          | Yes    | Yes         |
-| rsa3072_mldsa44              |         24          | Yes    | Yes         |
-| slhdsasha2128s               |         25          | No     | Yes         |
-| p256_slhdsasha2128s          |         26          | Yes    | Yes         |
-| rsa3072_slhdsasha2128s       |         27          | Yes    | Yes         |
-| mayo1                        |         28          | No     | Yes         |
-| p256_mayo1                   |         29          | Yes    | Yes         |
-| snova2454                    |         30          | No     | Yes         |
-| p256_snova2454               |         31          | Yes    | Yes         |
+| Algorithm                     | DNSSEC Algorithm ID | Hybrid | Implemented |
+| ----------------------------- | ------------------- | ------ | ----------- |
+| mldsa44                       | 18                  | No     | Yes         |
+| p256_mldsa44                  | 19                  | Yes    | Yes         |
+| rsa3072_mldsa44               | 20                  | Yes    | Yes         |
+| mldsa65                       | 21                  | No     | Yes         |
+| p384_mldsa65                  | 22                  | Yes    | Yes         |
+| mldsa87                       | 23                  | No     | Yes         |
+| p521_mldsa87                  | 24                  | Yes    | Yes         |
+| falconpadded512               | 25                  | No     | Yes         |
+| p256_falconpadded512          | 26                  | Yes    | Yes         |
+| rsa3072_falconpadded512       | 27                  | Yes    | Yes         |
+| p521_falconpadded1024         | 28                  | Yes    | Yes         |
+| falconpadded1024              | 29                  | No     | Yes         |
+| sphincssha2128ssimple         | 30                  | No     | Yes         |
+| p256_sphincssha2128ssimple    | 31                  | Yes    | Yes         |
+| rsa3072_sphincssha2128ssimple | 32                  | Yes    | Yes         |
+| mayo1                         | 33                  | No     | Yes         |
+| p256_mayo1                    | 34                  | Yes    | Yes         |
+| snova2454                     | 35                  | No     | Yes         |
+| p256_snova2454                | 36                  | Yes    | Yes         |
 
 # Benchmarks
 
