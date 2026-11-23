@@ -1,9 +1,9 @@
 module github.com/mr-torgue/dns
 
-go 1.25.0
+go 1.27.4
 
 require (
-	github.com/mr-torgue/go-openssl v1.0.2
+	github.com/mr-torgue/go-openssl v1.1.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/net v0.52.0
 	golang.org/x/sync v0.20.0

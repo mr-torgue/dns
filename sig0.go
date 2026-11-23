@@ -1,18 +1,17 @@
 package dns
 
 import (
+	"crypto"
 	"encoding/asn1"
 	"encoding/binary"
 	"math/big"
 	"time"
-
-	"github.com/mr-torgue/go-openssl"
 )
 
 // Sign signs a dns.Msg. It fills the signature with the appropriate data.
 // The SIG record should have the SignerName, KeyTag, Algorithm, Inception
 // and Expiration set.
-func (rr *SIG) Sign(k openssl.PrivateKey, m *Msg) ([]byte, error) {
+func (rr *SIG) Sign(k crypto.Signer, m *Msg) ([]byte, error) {
 	if k == nil {
 		return nil, ErrPrivKey
 	}
@@ -37,12 +36,17 @@ func (rr *SIG) Sign(k openssl.PrivateKey, m *Msg) ([]byte, error) {
 	}
 	buf = buf[:off:cap(buf)]
 
-	//h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
-	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	if err != nil {
+		return nil, err
+	}
 
-	signdata := append(buf[len(mbuf)+1+2+2+4+2:], buf[:len(mbuf)]...)
+	// Write SIG rdata
+	h.Write(buf[len(mbuf)+1+2+2+4+2:])
+	// Write message
+	h.Write(buf[:len(mbuf)])
 
-	signature, err := sign(k, h, signdata, rr.Algorithm)
+	signature, err := sign(k, h.Sum(nil), cryptohash, rr.Algorithm)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +79,10 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 		return ErrKey
 	}
 
-	h, err := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	if err != nil {
+		return err
+	}
 
 	buflen := len(buf)
 	qdc := binary.BigEndian.Uint16(buf[4:])
@@ -145,23 +152,24 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 		return &Error{err: "signer name doesn't match key name"}
 	}
 	sigend := offset
-	combined := make([]byte, 0, len(buf[sigstart:sigend])+10+2+len(buf[12:bodyend]))
-	combined = append(combined, buf[sigstart:sigend]...)
-	combined = append(combined, buf[:10]...)
-	combined = append(combined, byte((adc-1)<<8), byte(adc-1))
-	combined = append(combined, buf[12:bodyend]...)
+	h.Write(buf[sigstart:sigend])
+	h.Write(buf[:10])
+	h.Write([]byte{
+		byte((adc - 1) << 8),
+		byte(adc - 1),
+	})
+	h.Write(buf[12:bodyend])
 
+	hashed := h.Sum(nil)
 	sig := buf[sigend:]
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA512:
 		pk := k.publicKeyRSA()
 		if pk != nil {
-			return pk.VerifyPKCS1v15(h, combined, sig)
-			//return rsa.VerifyPKCS1v15(pk, cryptohash, hashed, sig)
+			return pk.Verify(hashed, sig, cryptohash)
 		}
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pk := k.publicKeyECDSA()
-		// Split sigbuf into the r and s coordinates and convert to DER signature
 		r := new(big.Int).SetBytes(sig[:len(sig)/2])
 		s := new(big.Int).SetBytes(sig[len(sig)/2:])
 		asn1Bytes, err := asn1.Marshal(struct {
@@ -171,12 +179,12 @@ func (rr *SIG) Verify(k *KEY, buf []byte) error {
 			return err
 		}
 		if pk != nil {
-			return pk.VerifyPKCS1v15(h, combined, asn1Bytes)
+			return pk.Verify(hashed, asn1Bytes, cryptohash)
 		}
 	case ED25519:
 		pk := k.publicKeyGeneric()
 		if pk != nil {
-			return pk.VerifyPKCS1v15(h, combined, sig)
+			return pk.Verify(hashed, sig, cryptohash)
 		}
 	}
 	return ErrKeyAlg

@@ -3,6 +3,7 @@ package dns
 // TODO(mr-torgue): add support for PQC. Might need to create new functions for new algorithms.
 import (
 	"bufio"
+	"crypto"
 	"io"
 	"math/big"
 	"strconv"
@@ -13,7 +14,7 @@ import (
 
 // NewPrivateKey returns a PrivateKey by parsing the string s.
 // s should be in the same form of the BIND private key files.
-func (k *DNSKEY) NewPrivateKey(s string) (openssl.PrivateKey, error) {
+func (k *DNSKEY) NewPrivateKey(s string) (crypto.PrivateKey, error) {
 	if s == "" || s[len(s)-1] != '\n' { // We need a closing newline
 		return k.ReadPrivateKey(strings.NewReader(s+"\n"), "")
 	}
@@ -24,7 +25,7 @@ func (k *DNSKEY) NewPrivateKey(s string) (openssl.PrivateKey, error) {
 // only used in error reporting.
 // The public key must be known, because some cryptographic algorithms embed
 // the public inside the privatekey.
-func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (openssl.PrivateKey, error) {
+func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (crypto.PrivateKey, error) {
 	m, err := parseKey(q, file)
 	if m == nil {
 		return nil, err
@@ -70,7 +71,7 @@ func (k *DNSKEY) ReadPrivateKey(q io.Reader, file string) (openssl.PrivateKey, e
 }
 
 // Read a private key (file) string and create a public key. Return the private key.
-func readPrivateKeyRSA(m map[string]string) (openssl.PrivateKey, error) {
+func readPrivateKeyRSA(m map[string]string) (crypto.PrivateKey, error) {
 	var E, N, D, P, Q *big.Int
 	for k, v := range m {
 		switch k {
@@ -107,7 +108,7 @@ func readPrivateKeyRSA(m map[string]string) (openssl.PrivateKey, error) {
 // Created: 20260513224606
 // Publish: 20260513224606
 // Activate: 20260513224606
-func readPrivateKeyECDSA(m map[string]string) (openssl.PrivateKey, error) {
+func readPrivateKeyECDSA(m map[string]string) (crypto.PrivateKey, error) {
 	var D *big.Int
 	var groupname string // curve
 	// TODO: validate that the required flags are present
@@ -134,7 +135,7 @@ func readPrivateKeyECDSA(m map[string]string) (openssl.PrivateKey, error) {
 	return openssl.BuildECDSAPrivateKey(D, groupname)
 }
 
-func readPrivateKeyED25519(m map[string]string) (openssl.PrivateKey, error) {
+func readPrivateKeyED25519(m map[string]string) (crypto.PrivateKey, error) {
 	var bytes []byte
 	var algName string
 	var err error

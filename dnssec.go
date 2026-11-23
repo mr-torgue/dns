@@ -2,6 +2,8 @@ package dns
 
 import (
 	"bytes"
+	"crypto"
+	"crypto/rand"
 	"encoding/asn1"
 	"encoding/binary"
 	"encoding/hex"
@@ -102,35 +104,35 @@ var AlgorithmToString = map[uint8]string{
 // For newer algorithm that do their own hashing (i.e. ED25519) the returned value
 // is 0, implying no (external) hashing should occur. The non-exported identityHash is then
 // used.
-var AlgorithmToHash = map[uint8]string{
-	RSAMD5:                 "md5", // Deprecated in RFC 6725
-	DSA:                    "sha1",
-	RSASHA1:                "sha1",
-	RSASHA1NSEC3SHA1:       "sha1",
-	RSASHA256:              "sha256",
-	ECDSAP256SHA256:        "sha256",
-	ECDSAP384SHA384:        "sha384",
-	RSASHA512:              "sha512",
-	ED25519:                "",
-	MLDSA44:                "",
-	P256_MLDSA44:           "",
-	RSA3072_MLDSA44:        "",
-	MLDSA65:                "",
-	P384_MLDSA65:           "",
-	MLDSA87:                "",
-	P521_MLDSA87:           "",
-	FALCON512:              "",
-	P256_FALCON512:         "",
-	RSA3072_FALCON512:      "",
-	FALCON1024:             "",
-	P521_FALCON1024:        "",
-	SLHDSASHA2128S:         "",
-	P256_SLHDSASHA2128S:    "",
-	RSA3072_SLHDSASHA2128S: "",
-	MAYO1:                  "",
-	P256_MAYO1:             "",
-	SNOVA2454:              "",
-	P256_SNOVA2454:         "",
+var AlgorithmToHash = map[uint8]crypto.Hash{
+	RSAMD5:                 crypto.MD5, // Deprecated in RFC 6725
+	DSA:                    crypto.SHA1,
+	RSASHA1:                crypto.SHA1,
+	RSASHA1NSEC3SHA1:       crypto.SHA1,
+	RSASHA256:              crypto.SHA256,
+	ECDSAP256SHA256:        crypto.SHA256,
+	ECDSAP384SHA384:        crypto.SHA384,
+	RSASHA512:              crypto.SHA512,
+	ED25519:                0,
+	MLDSA44:                0,
+	P256_MLDSA44:           0,
+	RSA3072_MLDSA44:        0,
+	MLDSA65:                0,
+	P384_MLDSA65:           0,
+	MLDSA87:                0,
+	P521_MLDSA87:           0,
+	FALCON512:              0,
+	P256_FALCON512:         0,
+	RSA3072_FALCON512:      0,
+	FALCON1024:             0,
+	P521_FALCON1024:        0,
+	SLHDSASHA2128S:         0,
+	P256_SLHDSASHA2128S:    0,
+	RSA3072_SLHDSASHA2128S: 0,
+	MAYO1:                  0,
+	P256_MAYO1:             0,
+	SNOVA2454:              0,
+	P256_SNOVA2454:         0,
 }
 
 // AlgorithmToCurve maps an algorithm to the correct curve.
@@ -265,32 +267,24 @@ func (k *DNSKEY) ToDS(h uint8) *DS {
 	// "|" denotes concatenation
 	// DNSKEY RDATA = Flags | Protocol | Algorithm | Public Key.
 
-	// TODO(mr-torgue): clean up code
-	var digestJob *openssl.DigestJob
+	var hash crypto.Hash
 	switch h {
 	case SHA1:
-		digestJob, err = openssl.NewSHA1Hash()
+		hash = crypto.SHA1
 	case SHA256:
-		digestJob, err = openssl.NewSHA256Hash()
+		hash = crypto.SHA256
 	case SHA384:
-		digest, err := openssl.GetDigestByName("sha384", false)
-		if err != nil {
-			return nil
-		}
-		digestJob, err = openssl.NewDigestJob(*digest)
+		hash = crypto.SHA384
 	case SHA512:
-		digest, err := openssl.GetDigestByName("sha512", false)
-		if err != nil {
-			return nil
-		}
-		digestJob, err = openssl.NewDigestJob(*digest)
+		hash = crypto.SHA512
 	default:
 		return nil
 	}
-	digestJob.Write(owner)
-	digestJob.Write(wire)
-	bytes, err := digestJob.Sum()
-	ds.Digest = hex.EncodeToString(bytes)
+
+	s := hash.New()
+	s.Write(owner)
+	s.Write(wire)
+	ds.Digest = hex.EncodeToString(s.Sum(nil))
 	return ds
 }
 
@@ -334,7 +328,7 @@ func (rr *RRSIG) Sign(k openssl.PrivateKey, rrset []RR) error {
 	return rr.signAsIs(k, rrset)
 }
 
-func (rr *RRSIG) signAsIs(k openssl.PrivateKey, rrset []RR) error {
+func (rr *RRSIG) signAsIs(k crypto.Signer, rrset []RR) error {
 	if k == nil {
 		return ErrPrivKey
 	}
@@ -366,16 +360,20 @@ func (rr *RRSIG) signAsIs(k openssl.PrivateKey, rrset []RR) error {
 		return err
 	}
 
-	//h, err := hashFromAlgorithm(rr.Algorithm)
-	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
+	if err != nil {
+		return err
+	}
 
 	switch rr.Algorithm {
 	case RSAMD5, DSA, DSANSEC3SHA1:
 		// See RFC 6944.
 		return ErrAlg
 	default:
-		signdata = append(signdata, wire...)
-		signature, err := sign(k, h, signdata, rr.Algorithm)
+		h.Write(signdata)
+		h.Write(wire)
+
+		signature, err := sign(k, h.Sum(nil), cryptohash, rr.Algorithm)
 		if err != nil {
 			return err
 		}
@@ -385,11 +383,8 @@ func (rr *RRSIG) signAsIs(k openssl.PrivateKey, rrset []RR) error {
 	}
 }
 
-func sign(k openssl.PrivateKey, h *openssl.Digest, data []byte, alg uint8) ([]byte, error) {
-	//return k.SignPKCS1v15(h, data)
-	signature, err := k.SignPKCS1v15(h, data)
-	//var k2 crypto.Signer
-	//k2.Sign(rand.Reader, hashed, hash)
+func sign(k crypto.Signer, hashed []byte, hash crypto.Hash, alg uint8) ([]byte, error) {
+	signature, err := k.Sign(rand.Reader, hashed, hash)
 	if err != nil {
 		return nil, err
 	}
@@ -501,9 +496,7 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 	// if rr.Algorithm == PRIVATEDNS { // PRIVATEOID
 	// }
 
-	//h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
-	h, _ := openssl.GetDigestByName(AlgorithmToHash[rr.Algorithm], false) // can be nil, some signature schemes don't use a digest
-
+	h, cryptohash, err := hashFromAlgorithm(rr.Algorithm)
 	if err != nil {
 		return err
 	}
@@ -516,10 +509,11 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 			return ErrKey
 		}
 
-		signeddata = append(signeddata, wire...)
+		h.Write(signeddata)
+		h.Write(wire)
+		hashed := h.Sum(nil)
 
-		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
-		//return rsa.VerifyPKCS1v15(pubkey, cryptohash, h.Sum(nil), sigbuf)
+		return pubkey.Verify(hashed, sigbuf, cryptohash)
 
 	case ECDSAP256SHA256, ECDSAP384SHA384:
 		pubkey := k.publicKeyECDSA()
@@ -536,13 +530,11 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 		if err != nil {
 			return err
 		}
+		h.Write(signeddata)
+		h.Write(wire)
+		hashed := h.Sum(nil)
 
-		signeddata = append(signeddata, wire...)
-		return pubkey.VerifyPKCS1v15(h, signeddata, asn1Bytes)
-		//if ecdsa.Verify(pubkey, h.Sum(nil), r, s) {
-		//	return nil
-		//}
-		//return ErrSig
+		return pubkey.Verify(hashed, asn1Bytes, cryptohash)
 
 	case ED25519, MLDSA44, P256_MLDSA44, RSA3072_MLDSA44, MLDSA65, P384_MLDSA65, MLDSA87, P521_MLDSA87, FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024, SLHDSASHA2128S, P256_SLHDSASHA2128S, RSA3072_SLHDSASHA2128S, MAYO1, P256_MAYO1, SNOVA2454, P256_SNOVA2454:
 		pubkey := k.publicKeyGeneric()
@@ -550,12 +542,7 @@ func (rr *RRSIG) Verify(k *DNSKEY, rrset []RR) error {
 			return ErrKey
 		}
 		signeddata = append(signeddata, wire...)
-		return pubkey.VerifyPKCS1v15(h, signeddata, sigbuf)
-
-		//if ed25519.Verify(pubkey, append(signeddata, wire...), sigbuf) {
-		//	return nil
-		//}
-		//return ErrSig
+		return pubkey.Verify(signeddata, sigbuf, cryptohash)
 
 	default:
 		return ErrAlg

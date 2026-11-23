@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto"
 	"math/big"
 	"strconv"
 
@@ -15,7 +16,7 @@ var bigIntOne = big.NewInt(1)
 // format as the private-key-file of BIND9 (Private-key-format: v1.3).
 // It needs some info from the key (the algorithm), so its a method of the DNSKEY.
 // It supports *rsa.PrivateKey, *ecdsa.PrivateKey and ed25519.PrivateKey.
-func (r *DNSKEY) PrivateKeyString(p openssl.PrivateKey) string {
+func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 	algorithm := strconv.Itoa(int(r.Algorithm))
 	algorithm += " (" + AlgorithmToString[r.Algorithm] + ")"
 

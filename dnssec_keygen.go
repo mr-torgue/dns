@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto"
 	"errors"
 	"math/big"
 
@@ -13,8 +14,7 @@ import (
 // what kind of DNSKEY will be generated.
 // The ECDSA algorithms imply a fixed keysize, in that case
 // bits should be set to the size of the algorithm.
-// TODO (mr-torgue): I don't think the key length checks are needed, so we might remove them.
-func (k *DNSKEY) Generate(bits int) (openssl.PrivateKey, error) {
+func (k *DNSKEY) Generate(bits int) (crypto.PrivateKey, error) {
 	switch k.Algorithm {
 	case RSASHA1, RSASHA256, RSASHA1NSEC3SHA1:
 		if bits < 512 || bits > 4096 {

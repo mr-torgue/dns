@@ -9,8 +9,8 @@ github.com/hashicorp/go-multierror v1.1.1 h1:H5DkEtf6CXdFp0N0Em5UCwQpXMWke8IA0+l
 github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9/fmwbPZ6JB6eMoM=
 github.com/mattn/go-pointer v0.0.1 h1:n+XhsuGeVO6MEAp7xyEukFINEa+Quek5psIR/ylA6o0=
 github.com/mattn/go-pointer v0.0.1/go.mod h1:2zXcozF6qYGgmsG+SeTZz3oAbFLdD3OWqnUbNvJZAlc=
-github.com/mr-torgue/go-openssl v1.0.2 h1:3IgJC6sOkUiIxqHXgkEJeT6gdIUQJ/z9LY3GxIePA+c=
-github.com/mr-torgue/go-openssl v1.0.2/go.mod h1:tzDUDy+DzAdhu0PjWiP8AxpL34QyFnCvHmdZlV8m7Mk=
+github.com/mr-torgue/go-openssl v1.1.0 h1:Zbdl/U3SWJIyJcp8vjkNoe785X63u/3ECyoB+WYD6rw=
+github.com/mr-torgue/go-openssl v1.1.0/go.mod h1:mfrnlWgMmxZff4j3fIC3Ggs0IpbaPTqiZVSzb05QKCc=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/sirupsen/logrus v1.9.4 h1:TsZE7l11zFCLZnZ+teH4Umoq5BhEIfIzfRDZ1Uzql2w=
