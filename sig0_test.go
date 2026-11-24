@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto"
 	"testing"
 	"time"
 )
@@ -42,7 +43,7 @@ func TestSIG0(t *testing.T) {
 		sigrr.Inception = now - 300
 		sigrr.KeyTag = keyrr.KeyTag()
 		sigrr.SignerName = keyrr.Hdr.Name
-		mb, err := sigrr.Sign(pk, m)
+		mb, err := sigrr.Sign(pk.(crypto.Signer), m)
 		if err != nil {
 			t.Errorf("failed to sign message using %q: %v", algstr, err)
 			continue
@@ -81,7 +82,7 @@ func TestSIG0(t *testing.T) {
 		}
 		sigrr.Expiration = 2
 		sigrr.Inception = 1
-		mb, _ = sigrr.Sign(pk, m)
+		mb, _ = sigrr.Sign(pk.(crypto.Signer), m)
 		if err := sigrr.Verify(keyrr, mb); err == nil {
 			t.Errorf("verify succeeded on an expired message using %q", algstr)
 			continue

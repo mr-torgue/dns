@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"crypto"
 	"math/big"
 	"reflect"
 	"strings"
@@ -148,7 +149,7 @@ Coefficient: ONc1U/hQ0usCbCPc9DqZTD/kSFtDEOJkbzjRf78UcftFw3SVf7rqFeRBOAfvbadgdZP
 	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
 	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = RSASHA256
-	err = sig.Sign(privkey, []RR{cname})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{cname})
 	require.Nil(t, err, "err should be nil")
 	assert.Equal(t, expectedCNAMESignature, sig.Signature, "signatures should be equal")
 
@@ -168,7 +169,7 @@ Coefficient: ONc1U/hQ0usCbCPc9DqZTD/kSFtDEOJkbzjRf78UcftFw3SVf7rqFeRBOAfvbadgdZP
 	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
 	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = RSASHA256
-	err = sig.Sign(privkey, []RR{ns2, ns1})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{ns2, ns1})
 	require.Nil(t, err, "err should be nil")
 	assert.Equal(t, expectedNSSignature, sig.Signature, "signatures should be equal")
 
@@ -204,7 +205,7 @@ PrivateKey: vg6oG9cg9A0spN/6YrtMvASSdZHIxazupgtCNCP0Mmg=
 	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
 	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = ECDSAP256SHA256
-	err = sig.Sign(privkey, []RR{cname})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
 	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
@@ -243,7 +244,7 @@ PrivateKey: WRAQQwBOhvw/hOvgOQBuQwxADAeghQwguyRghAxQghRiffPhfvhQgfgwwugAQeAQxfw/
 	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
 	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = FALCON512
-	err = sig.Sign(privkey, []RR{cname})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
 	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
@@ -277,7 +278,7 @@ PrivateKey: AAAAeTB3AgEBBCDz6MwxQtej7sKBdQZD5wFyWf7YZZi91Lpk/JAkVL8Qq6AKBggqhkjO
 	sig.KeyTag = pubkey.(*DNSKEY).KeyTag() // Get the keyfrom the Key
 	sig.SignerName = pubkey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = P256_FALCON512
-	err = sig.Sign(privkey, []RR{cname})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
 	err = sig.Verify(pubkey.(*DNSKEY), []RR{cname})
 	assert.Nil(t, err, "err should be nil")
@@ -380,7 +381,7 @@ func TestSignVerify(t *testing.T) {
 			sig.SignerName = key.Hdr.Name
 			sig.Algorithm = algo.algorithm
 			for _, r := range []RR{soa, soa1, srv, hinfo} {
-				if err := sig.Sign(privkey, []RR{r}); err != nil {
+				if err := sig.Sign(privkey.(crypto.Signer), []RR{r}); err != nil {
 					t.Error("failure to sign the record:", err)
 					continue
 				}
@@ -440,7 +441,7 @@ func TestShouldNotSignVerifyWithInvalidAlgorithm(t *testing.T) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = 37 // note: if new schemes get added this fails!
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	assert.NotNil(t, err, "should fail because of wrong algorithm number (sign)")
 
 	// create working signature
@@ -454,7 +455,7 @@ func TestShouldNotSignVerifyWithInvalidAlgorithm(t *testing.T) {
 	sig.KeyTag = key.KeyTag()   // Get the keyfrom the Key
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = 31
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	assert.Nil(t, err)
 
 	// verify should work as well
@@ -526,7 +527,7 @@ func TestShouldNotVerifyInvalidSig(t *testing.T) {
 			key.Hdr.Name = rr.Header().Name
 		}
 
-		if err := sig.signAsIs(privkey, []RR{rr}); err != nil {
+		if err := sig.signAsIs(privkey.(crypto.Signer), []RR{rr}); err != nil {
 			t.Error("failure to sign the record:", err)
 			continue
 		}
@@ -548,7 +549,7 @@ func TestShouldNotVerifyInvalidSig(t *testing.T) {
 	soaMismatchName.Hdr.Name = "example.com."
 	keyMismatchName := key.copy().(*DNSKEY)
 	keyMismatchName.Hdr.Name = "example.com."
-	if err := sigMismatchName.signAsIs(privkey, []RR{soaMismatchName}); err != nil {
+	if err := sigMismatchName.signAsIs(privkey.(crypto.Signer), []RR{soaMismatchName}); err != nil {
 		t.Error("failure to sign the record:", err)
 	} else if err := sigMismatchName.Verify(keyMismatchName, []RR{soaMismatchName}); err == nil {
 		t.Error("should not validate: ", soaMismatchName, ", RRSIG's signer's name does not match the owner name")
@@ -561,7 +562,7 @@ func TestShouldNotVerifyInvalidSig(t *testing.T) {
 	sigMismatchKeyTag := sig.copy().(*RRSIG)
 	sigMismatchKeyTag.KeyTag = 12345
 	for _, sigMismatch := range []*RRSIG{sigMismatchAlgo, sigMismatchKeyTag} {
-		if err := sigMismatch.Sign(privkey, []RR{normalSoa}); err != nil {
+		if err := sigMismatch.Sign(privkey.(crypto.Signer), []RR{normalSoa}); err != nil {
 			t.Error("failure to sign the record:", err)
 		} else if err := sigMismatch.Verify(key, []RR{normalSoa}); err == nil {
 			t.Error("should not validate: ", normalSoa)
@@ -573,7 +574,7 @@ func TestShouldNotVerifyInvalidSig(t *testing.T) {
 	// The matching DNSKEY RR MUST have the Zone Flag bit (DNSKEY RDATA Flag bit 7) set.
 	keyZoneBitWrong := key.copy().(*DNSKEY)
 	keyZoneBitWrong.Flags = key.Flags &^ ZONE
-	if err := sig.Sign(privkey, []RR{normalSoa}); err != nil {
+	if err := sig.Sign(privkey.(crypto.Signer), []RR{normalSoa}); err != nil {
 		t.Error("failure to sign the record:", err)
 	} else if err := sig.Verify(keyZoneBitWrong, []RR{normalSoa}); err == nil {
 		t.Error("should not validate: ", normalSoa)
@@ -609,7 +610,7 @@ func Test65534(t *testing.T) {
 	sig.KeyTag = key.KeyTag()
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = RSASHA256
-	if err := sig.Sign(privkey, []RR{t6}); err != nil {
+	if err := sig.Sign(privkey.(crypto.Signer), []RR{t6}); err != nil {
 		t.Error(err)
 		t.Error("failure to sign the TYPE65534 record")
 	}
@@ -706,7 +707,7 @@ func TestKeyRSA(t *testing.T) {
 	sig.KeyTag = key.KeyTag()
 	sig.SignerName = key.Hdr.Name
 
-	if err := sig.Sign(priv, []RR{soa}); err != nil {
+	if err := sig.Sign(priv.(crypto.Signer), []RR{soa}); err != nil {
 		t.Error("failed to sign")
 		return
 	}
@@ -828,7 +829,11 @@ Activate: 20110302104537`
 
 	xk := testRR(pub)
 	k := xk.(*DNSKEY)
-	p, err := k.NewPrivateKey(priv)
+	tmpp, err := k.NewPrivateKey(priv)
+	p, err := toOpenSSLPrivateKey(tmpp)
+	if err != nil {
+		t.Fatal("err should be nil!")
+	}
 	require.Nil(t, err, "err should be nil")
 	require.NotNil(t, p, "p should not be nil")
 
@@ -898,7 +903,7 @@ PrivateKey: WURgWHCcYIYUPWgeLmiPY2DJJk02vgrmTfitxgqcL4vwW7BOrbawVmVe0d9V94SR`
 	sig.SignerName = eckey.(*DNSKEY).Hdr.Name
 	sig.Algorithm = eckey.(*DNSKEY).Algorithm
 
-	if sig.Sign(privkey, []RR{a}) != nil {
+	if sig.Sign(privkey.(crypto.Signer), []RR{a}) != nil {
 		t.Fatal("failure to sign the record")
 	}
 
@@ -943,7 +948,7 @@ func TestSignVerifyECDSA2(t *testing.T) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = ECDSAP256SHA256
 
-	if sig.Sign(privkey, []RR{srv}) != nil {
+	if sig.Sign(privkey.(crypto.Signer), []RR{srv}) != nil {
 		t.Fatal("failure to sign the record")
 	}
 
@@ -992,7 +997,7 @@ func TestSignVerifyEd25519(t *testing.T) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = ED25519
 
-	if sig.Sign(privkey, []RR{srv}) != nil {
+	if sig.Sign(privkey.(crypto.Signer), []RR{srv}) != nil {
 		t.Fatal("failure to sign the record")
 	}
 
@@ -1053,7 +1058,7 @@ PrivateKey: GU6SnQ/Ou+xC5RumuIUIuJZteXT2z0O/ok1s38Et6mQ=`
 	}
 	ourRRSIG.Expiration, _ = StringToTime("20100909100439")
 	ourRRSIG.Inception, _ = StringToTime("20100812100439")
-	err = ourRRSIG.Sign(priv, []RR{rrA})
+	err = ourRRSIG.Sign(priv.(crypto.Signer), []RR{rrA})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1120,7 +1125,7 @@ PrivateKey: WURgWHCcYIYUPWgeLmiPY2DJJk02vgrmTfitxgqcL4vwW7BOrbawVmVe0d9V94SR`
 	}
 	ourRRSIG.Expiration, _ = StringToTime("20100909102025")
 	ourRRSIG.Inception, _ = StringToTime("20100812102025")
-	err = ourRRSIG.Sign(priv, []RR{rrA})
+	err = ourRRSIG.Sign(priv.(crypto.Signer), []RR{rrA})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1192,7 +1197,7 @@ PrivateKey: ODIyNjAzODQ2MjgwODAxMjI2NDUxOTAyMDQxNDIyNjI=`
 	}
 	ourRRSIG.Expiration, _ = StringToTime("20150819220000")
 	ourRRSIG.Inception, _ = StringToTime("20150729220000")
-	err = ourRRSIG.Sign(priv, []RR{rrMX})
+	err = ourRRSIG.Sign(priv.(crypto.Signer), []RR{rrMX})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1261,7 +1266,7 @@ PrivateKey: DSSF3o0s0f+ElWzj9E/Osxw8hLpk55chkmx0LYN5WiY=`
 	}
 	ourRRSIG.Expiration, _ = StringToTime("20150819220000")
 	ourRRSIG.Inception, _ = StringToTime("20150729220000")
-	err = ourRRSIG.Sign(priv, []RR{rrMX})
+	err = ourRRSIG.Sign(priv.(crypto.Signer), []RR{rrMX})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1327,7 +1332,7 @@ func TestInvalidRRSet(t *testing.T) {
 	}
 
 	// Sign the good record set and then make sure verification fails on the bad record set
-	if err := signature.Sign(privatekey, goodRecords); err != nil {
+	if err := signature.Sign(privatekey.(crypto.Signer), goodRecords); err != nil {
 		t.Fatal("Signing good records failed")
 	}
 
@@ -1558,7 +1563,7 @@ func BenchmarkSignRSA(b *testing.B) {
 	sig.Algorithm = RSASHA256
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1601,7 +1606,7 @@ func BenchmarkSignECDSA(b *testing.B) {
 	sig.Algorithm = ECDSAP256SHA256
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1644,7 +1649,7 @@ func BenchmarkSignED25519(b *testing.B) {
 	sig.Algorithm = ED25519
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1687,7 +1692,7 @@ func BenchmarkSignFALCON512(b *testing.B) {
 	sig.Algorithm = FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1730,7 +1735,7 @@ func BenchmarkSignP256_FALCON512(b *testing.B) {
 	sig.Algorithm = P256_FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1773,7 +1778,7 @@ func BenchmarkSignRSA3072FALCON512(b *testing.B) {
 	sig.Algorithm = RSA3072_FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1816,7 +1821,7 @@ func BenchmarkSignFALCON1024(b *testing.B) {
 	sig.Algorithm = FALCON1024
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1859,7 +1864,7 @@ func BenchmarkSignP521FALCON1024(b *testing.B) {
 	sig.Algorithm = P521_FALCON1024
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 	}
 }
@@ -1903,7 +1908,7 @@ func BenchmarkVerifyRSA(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = RSASHA256
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -1949,7 +1954,7 @@ func BenchmarkVerifyECDSA(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = ECDSAP256SHA256
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -1995,7 +2000,7 @@ func BenchmarkVerifyED25519(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = ED25519
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2041,7 +2046,7 @@ func BenchmarkVerifyFALCON512(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = FALCON512
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2087,7 +2092,7 @@ func BenchmarkVerifyP256FALCON512(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = P256_FALCON512
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2133,7 +2138,7 @@ func BenchmarkVerifyRSA3072FALCON512(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = RSA3072_FALCON512
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2179,7 +2184,7 @@ func BenchmarkVerifyFALCON1024(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = FALCON1024
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2225,7 +2230,7 @@ func BenchmarkVerifyP521FALCON1024(b *testing.B) {
 	sig.SignerName = key.Hdr.Name
 	sig.Algorithm = P521_FALCON1024
 
-	err = sig.Sign(privkey, []RR{soa})
+	err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 	require.Nil(b, err, "sign err should be nil")
 
 	for i := 0; i < b.N; i++ {
@@ -2274,7 +2279,7 @@ func BenchmarkSignVerifyRSA(b *testing.B) {
 	sig.Algorithm = RSASHA256
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2319,7 +2324,7 @@ func BenchmarkSignVerifyECDSA(b *testing.B) {
 	sig.Algorithm = ECDSAP256SHA256
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2364,7 +2369,7 @@ func BenchmarkSignVerifyED25519(b *testing.B) {
 	sig.Algorithm = ED25519
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2409,7 +2414,7 @@ func BenchmarkSignVerifyFALCON512(b *testing.B) {
 	sig.Algorithm = FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2454,7 +2459,7 @@ func BenchmarkSignVerifyP256FALCON512(b *testing.B) {
 	sig.Algorithm = P256_FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2499,7 +2504,7 @@ func BenchmarkSignVerifyRSA3072FALCON512(b *testing.B) {
 	sig.Algorithm = RSA3072_FALCON512
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2544,7 +2549,7 @@ func BenchmarkSignVerifyFALCON1024(b *testing.B) {
 	sig.Algorithm = FALCON1024
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2590,7 +2595,7 @@ func BenchmarkSignVerifyP521FALCON1024(b *testing.B) {
 	sig.Algorithm = P521_FALCON1024
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2636,7 +2641,7 @@ func BenchmarkSignVerifyMLDSA44(b *testing.B) {
 	sig.Algorithm = MLDSA44
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2682,7 +2687,7 @@ func BenchmarkSignVerifyP256_MLDSA44(b *testing.B) {
 	sig.Algorithm = P256_MLDSA44
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2728,7 +2733,7 @@ func BenchmarkSignVerifyRSA3072_MLDSA44(b *testing.B) {
 	sig.Algorithm = RSA3072_MLDSA44
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2774,7 +2779,7 @@ func BenchmarkSignVerifyMLDSA65(b *testing.B) {
 	sig.Algorithm = MLDSA65
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2820,7 +2825,7 @@ func BenchmarkSignVerifyP384_MLDSA65(b *testing.B) {
 	sig.Algorithm = P384_MLDSA65
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2866,7 +2871,7 @@ func BenchmarkSignVerifyMLDSA87(b *testing.B) {
 	sig.Algorithm = MLDSA87
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2912,7 +2917,7 @@ func BenchmarkSignVerifyP521_MLDSA87(b *testing.B) {
 	sig.Algorithm = P521_MLDSA87
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -2958,7 +2963,7 @@ func BenchmarkSignVerifySLHDSASHA2128S(b *testing.B) {
 	sig.Algorithm = SLHDSASHA2128S
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3004,7 +3009,7 @@ func BenchmarkSignVerifyP256_SLHDSASHA2128S(b *testing.B) {
 	sig.Algorithm = P256_SLHDSASHA2128S
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3050,7 +3055,7 @@ func BenchmarkSignVerifyRSA3072_SLHDSASHA2128S(b *testing.B) {
 	sig.Algorithm = RSA3072_SLHDSASHA2128S
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3096,7 +3101,7 @@ func BenchmarkSignVerifyMAYO1(b *testing.B) {
 	sig.Algorithm = MAYO1
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3142,7 +3147,7 @@ func BenchmarkSignVerifyP256_MAYO1(b *testing.B) {
 	sig.Algorithm = P256_MAYO1
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3188,7 +3193,7 @@ func BenchmarkSignVerifySNOVA2454(b *testing.B) {
 	sig.Algorithm = SNOVA2454
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")
@@ -3234,7 +3239,7 @@ func BenchmarkSignVerifyP256_SNOVA2454(b *testing.B) {
 	sig.Algorithm = P256_SNOVA2454
 
 	for i := 0; i < b.N; i++ {
-		err = sig.Sign(privkey, []RR{soa})
+		err = sig.Sign(privkey.(crypto.Signer), []RR{soa})
 		require.Nil(b, err, "sign err should be nil")
 		err = sig.Verify(key, []RR{soa})
 		require.Nil(b, err, "verify err should be nil")

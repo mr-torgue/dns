@@ -8,7 +8,7 @@ package dnsutil
 import (
 	"strings"
 
-	"github.com/mr-torgue/dns"
+	"github.com/miekg/dns"
 )
 
 // AddOrigin adds origin to s if s is not already a FQDN.

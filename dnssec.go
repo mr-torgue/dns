@@ -310,7 +310,7 @@ func (d *DS) ToCDS() *CDS {
 // There is no check if RRSet is a proper (RFC 2181) RRSet.  If OrigTTL is non
 // zero, it is used as-is, otherwise the TTL of the RRset is used as the
 // OrigTTL.
-func (rr *RRSIG) Sign(k openssl.PrivateKey, rrset []RR) error {
+func (rr *RRSIG) Sign(k crypto.Signer, rrset []RR) error {
 	h0 := rrset[0].Header()
 	rr.Hdr.Rrtype = TypeRRSIG
 	rr.Hdr.Name = h0.Name

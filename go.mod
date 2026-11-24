@@ -1,4 +1,4 @@
-module github.com/mr-torgue/dns
+module github.com/miekg/dns
 
 go 1.27.4
 

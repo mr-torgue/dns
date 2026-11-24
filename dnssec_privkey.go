@@ -19,10 +19,14 @@ var bigIntOne = big.NewInt(1)
 func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 	algorithm := strconv.Itoa(int(r.Algorithm))
 	algorithm += " (" + AlgorithmToString[r.Algorithm] + ")"
+	key, err := toOpenSSLPrivateKey(p)
+	if err != nil {
+		return ""
+	}
 
 	switch r.Algorithm {
 	case RSASHA1, RSASHA1NSEC3SHA1, RSASHA256, RSASHA512:
-		E, N, D, P, Q, err := openssl.GetParamsRSAPrivate(p)
+		E, N, D, P, Q, err := openssl.GetParamsRSAPrivate(key)
 		if err != nil {
 			return ""
 		}
@@ -55,7 +59,7 @@ func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 			"Coefficient: " + coefficient + "\n"
 
 	case ECDSAP256SHA256, ECDSAP384SHA384:
-		D, err := openssl.GetECDSAPrivateKey(p)
+		D, err := openssl.GetECDSAPrivateKey(key)
 		if err != nil {
 			return ""
 		}
@@ -72,7 +76,7 @@ func (r *DNSKEY) PrivateKeyString(p crypto.PrivateKey) string {
 			"PrivateKey: " + private + "\n"
 
 	case ED25519, MLDSA44, P256_MLDSA44, RSA3072_MLDSA44, MLDSA65, P384_MLDSA65, MLDSA87, P521_MLDSA87, FALCON512, P256_FALCON512, RSA3072_FALCON512, FALCON1024, P521_FALCON1024, SLHDSASHA2128S, P256_SLHDSASHA2128S, RSA3072_SLHDSASHA2128S, MAYO1, P256_MAYO1, SNOVA2454, P256_SNOVA2454:
-		raw, err := openssl.GetRawPrivateKey(p)
+		raw, err := openssl.GetRawPrivateKey(key)
 		if err != nil {
 			return ""
 		}
